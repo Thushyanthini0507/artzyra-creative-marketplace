@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const artistSchema = new mongoose.Schema(
   {
@@ -76,6 +77,17 @@ artistSchema.pre("save", async function (next) {
 // Match artist entered password to hashed password in database
 artistSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Generate JWT token for artist
+artistSchema.methods.getSignedJwtToken = function () {
+  return jwt.sign(
+    { id: this._id, userType: "artist", role: "Artist" },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    }
+  );
 };
 
 export default mongoose.model("Artist", artistSchema);

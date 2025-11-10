@@ -28,36 +28,71 @@ export const verifyToken = asyncHandler(async (req, res, next) => {
   try {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { id, userType, role } = decoded;
 
-    // Try to find user in User model (Admin)
-    let user = await User.findById(decoded.id).select("-password");
-    if (user) {
-      req.user = user;
-      req.userType = "admin";
-      req.user.role = user.role; // Ensure role is set
-      return next();
+    let user;
+
+    // Use userType from token for efficient lookup
+    switch (userType) {
+      case "admin":
+        user = await User.findById(id).select("-password");
+        if (!user) {
+          throw new UnauthorizedError("Admin user not found");
+        }
+        req.user = user;
+        req.userType = "admin";
+        // Role is already in user document for Admin
+        break;
+
+      case "artist":
+        user = await Artist.findById(id).select("-password");
+        if (!user) {
+          throw new UnauthorizedError("Artist not found");
+        }
+        req.user = user;
+        req.userType = "artist";
+        req.user.role = "Artist"; // Set role for artists
+        break;
+
+      case "customer":
+        user = await Customer.findById(id).select("-password");
+        if (!user) {
+          throw new UnauthorizedError("Customer not found");
+        }
+        req.user = user;
+        req.userType = "customer";
+        req.user.role = "Customer"; // Set role for customers
+        break;
+
+      default:
+        // Fallback: Try all models if userType is not set (backward compatibility)
+        user = await User.findById(id).select("-password");
+        if (user) {
+          req.user = user;
+          req.userType = "admin";
+          break;
+        }
+
+        user = await Artist.findById(id).select("-password");
+        if (user) {
+          req.user = user;
+          req.userType = "artist";
+          req.user.role = "Artist";
+          break;
+        }
+
+        user = await Customer.findById(id).select("-password");
+        if (user) {
+          req.user = user;
+          req.userType = "customer";
+          req.user.role = "Customer";
+          break;
+        }
+
+        throw new UnauthorizedError("User not found");
     }
 
-    // Try to find user in Artist model
-    user = await Artist.findById(decoded.id).select("-password");
-    if (user) {
-      req.user = user;
-      req.userType = "artist";
-      req.user.role = "Artist"; // Set role for artists
-      return next();
-    }
-
-    // Try to find user in Customer model
-    user = await Customer.findById(decoded.id).select("-password");
-    if (user) {
-      req.user = user;
-      req.userType = "customer";
-      req.user.role = "Customer"; // Set role for customers
-      return next();
-    }
-
-    // If no user found in any model
-    throw new UnauthorizedError("User not found");
+    next();
   } catch (error) {
     if (error.name === "JsonWebTokenError") {
       throw new UnauthorizedError("Invalid token");

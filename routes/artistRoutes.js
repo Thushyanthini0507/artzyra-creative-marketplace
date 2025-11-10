@@ -6,15 +6,33 @@ import {
   getArtistById,
   updateArtist,
 } from "../controllers/artistController.js";
-import { protect, adminOnly } from "../middleware/auth.js";
+import {
+  registerArtist,
+  loginArtist,
+  getMeArtist,
+  updateArtistPassword,
+} from "../controllers/artistAuthController.js";
+import { verifyToken, verifyRole } from "../middleware/auth.js";
 
 const ArtistRouter = express.Router();
 
-// All artist routes require admin access
-ArtistRouter.get("/", protect,  getAllArtist);
-ArtistRouter.get("/:id", protect, adminOnly, getArtistById);
-ArtistRouter.post("/", protect, adminOnly, createArtist);
-ArtistRouter.put("/:id", protect, adminOnly, updateArtist);
-ArtistRouter.delete("/:id", protect, adminOnly, deleteArtist);
+// Public routes - Authentication
+ArtistRouter.post("/register", registerArtist);
+ArtistRouter.post("/login", loginArtist);
+
+// Protected routes - Artist profile management
+ArtistRouter.get("/me", verifyToken, verifyRole("Artist"), getMeArtist);
+ArtistRouter.put("/updatepassword", verifyToken, verifyRole("Artist"), updateArtistPassword);
+
+// Public route - Get all artists (for browsing)
+ArtistRouter.get("/", getAllArtist);
+
+// Public route - Get artist by ID (for viewing profile)
+ArtistRouter.get("/:id", getArtistById);
+
+// Admin only routes - Artist management
+ArtistRouter.post("/", verifyToken, verifyRole("Admin", "Super Admin"), createArtist);
+ArtistRouter.put("/:id", verifyToken, verifyRole("Admin", "Super Admin", "Artist"), updateArtist);
+ArtistRouter.delete("/:id", verifyToken, verifyRole("Admin", "Super Admin"), deleteArtist);
 
 export default ArtistRouter;

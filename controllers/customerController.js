@@ -1,6 +1,6 @@
 import Customer from "../models/Customer.js";
 import { asyncHandler } from "../middleware/errorHandler.js";
-import { NotFoundError } from "../utils/errors.js";
+import { NotFoundError, UnauthorizedError } from "../utils/errors.js";
 
 // Get all customers
 export const getAllCustomers = asyncHandler(async (req, res) => {
@@ -20,6 +20,11 @@ export const getCustomerById = asyncHandler(async (req, res) => {
 
   if (!customer) {
     throw new NotFoundError("Customer");
+  }
+
+  // Check if customer is accessing their own data or is admin
+  if (req.user.role === "Customer" && req.user._id.toString() !== id) {
+    throw new UnauthorizedError("Not authorized to access this customer's data");
   }
 
   res.status(200).json({
@@ -44,6 +49,12 @@ export const createCustomer = asyncHandler(async (req, res) => {
 // Update a customer by Id
 export const updateCustomer = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  
+  // Check if customer is updating their own data or is admin
+  if (req.user.role === "Customer" && req.user._id.toString() !== id) {
+    throw new UnauthorizedError("Not authorized to update this customer's data");
+  }
+
   const updateData = req.body;
   const customer = await Customer.findByIdAndUpdate(id, updateData, {
     new: true,

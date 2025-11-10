@@ -1,6 +1,6 @@
 import Artist from "../models/artist.js";
 import { asyncHandler } from "../middleware/errorHandler.js";
-import { NotFoundError } from "../utils/errors.js";
+import { NotFoundError, UnauthorizedError } from "../utils/errors.js";
 
 // Get all artists
 export const getAllArtist = asyncHandler(async (req, res) => {
@@ -44,6 +44,12 @@ export const createArtist = asyncHandler(async (req, res) => {
 // Update an artist by Id
 export const updateArtist = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  
+  // Check if artist is updating their own data or is admin
+  if (req.user.role === "Artist" && req.user._id.toString() !== id) {
+    throw new UnauthorizedError("Not authorized to update this artist's data");
+  }
+
   const updateData = req.body;
   const artist = await Artist.findByIdAndUpdate(id, updateData, {
     new: true,

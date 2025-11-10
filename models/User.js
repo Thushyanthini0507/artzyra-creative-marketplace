@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["Super Admin", "Moderator","Artist", "Coustomer", "Admin"],
+      enum: ["Super Admin", "Admin", "Moderator"],
       default: "Admin",
     },
     contact_number: {
@@ -55,9 +55,13 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 // Generate JWT token
 userSchema.methods.getSignedJwtToken = function () {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
+  return jwt.sign(
+    { id: this._id, userType: "admin", role: this.role },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    }
+  );
 };
 
 export default mongoose.model("User", userSchema);

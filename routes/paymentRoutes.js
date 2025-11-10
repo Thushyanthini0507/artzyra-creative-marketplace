@@ -6,15 +6,27 @@ import {
   getPaymentById,
   updatePayment,
 } from "../controllers/paymentController.js";
-import { protect, adminOnly } from "../middleware/auth.js";
+import { verifyToken, verifyRole } from "../middleware/auth.js";
 
 const PaymentRouter = express.Router();
 
-// All payment routes require admin access
-PaymentRouter.get("/", protect, adminOnly, getAllPayment);
-PaymentRouter.get("/:id", protect, adminOnly, getPaymentById);
-PaymentRouter.post("/", protect, adminOnly, createPayment);
-PaymentRouter.put("/:id", protect, adminOnly, updatePayment);
-PaymentRouter.delete("/:id", protect, adminOnly, deletePayment);
+// All payment routes require authentication
+// Admins can manage all payments
+// Customers can view their own payments
+
+// Get all payments - Admin only
+PaymentRouter.get("/", verifyToken, verifyRole("Admin", "Super Admin"), getAllPayment);
+
+// Get payment by ID - Admin and Customer (own payments)
+PaymentRouter.get("/:id", verifyToken, verifyRole("Admin", "Super Admin", "Customer"), getPaymentById);
+
+// Create payment - Admin and Customer
+PaymentRouter.post("/", verifyToken, verifyRole("Admin", "Super Admin", "Customer"), createPayment);
+
+// Update payment - Admin only
+PaymentRouter.put("/:id", verifyToken, verifyRole("Admin", "Super Admin"), updatePayment);
+
+// Delete payment - Admin only
+PaymentRouter.delete("/:id", verifyToken, verifyRole("Admin", "Super Admin"), deletePayment);
 
 export default PaymentRouter;

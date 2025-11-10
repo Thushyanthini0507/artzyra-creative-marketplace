@@ -138,7 +138,7 @@ export const login = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getMe = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user._id);
 
   res.status(200).json({
     success: true,
@@ -216,7 +216,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   // Prevent self-deletion
-  if (id === req.user.id) {
+  if (id === req.user._id.toString()) {
     throw new BadRequestError("You cannot delete your own account");
   }
 
@@ -239,14 +239,13 @@ export const deleteUser = asyncHandler(async (req, res) => {
  */
 export const updatePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  const { id } = req.user;
 
   if (!currentPassword || !newPassword) {
     throw new BadRequestError("Please provide current and new password");
   }
 
   // Get user with password
-  const user = await User.findById(id).select("+password");
+  const user = await User.findById(req.user._id).select("+password");
 
   // Check current password
   if (!(await user.matchPassword(currentPassword))) {
