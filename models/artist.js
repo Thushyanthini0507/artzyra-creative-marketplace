@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 const artistSchema = new mongoose.Schema(
   {
@@ -20,6 +21,12 @@ const artistSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       required: true,
+    },
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
+      select: false, // Don't return password by default
     },
     phone: {
       type: String,
@@ -54,5 +61,21 @@ const artistSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Hash password before saving
+artistSchema.pre("save", async function (next) {
+  // Only hash password if it's been modified (or is new)
+  if (!this.isModified("password")) {
+    next();
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Match artist entered password to hashed password in database
+artistSchema.methods.matchPassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
 export default mongoose.model("Artist", artistSchema);
