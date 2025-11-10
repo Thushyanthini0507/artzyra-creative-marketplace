@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["Super Admin", "Moderator","Designer", "Admin"],
+      enum: ["Super Admin", "Moderator","Artist", "Coustomer", "Admin"],
       default: "Admin",
     },
     contact_number: {

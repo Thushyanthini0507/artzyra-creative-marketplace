@@ -187,7 +187,7 @@ export const getUserById = asyncHandler(async (req, res) => {
  */
 export const updateUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   // Don't allow password update through this route
   const { password, ...updateData } = req.body;
 
@@ -214,7 +214,7 @@ export const updateUser = asyncHandler(async (req, res) => {
  */
 export const deleteUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
   // Prevent self-deletion
   if (id === req.user.id) {
     throw new BadRequestError("You cannot delete your own account");
