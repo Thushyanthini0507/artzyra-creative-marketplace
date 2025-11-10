@@ -2,6 +2,7 @@ import express from "express";
 import {
   register,
   login,
+  logout,
   getMe,
   getAllUsers,
   getUserById,
@@ -18,6 +19,7 @@ userRouter.post("/login", login);
 userRouter.post("/register", register); // Public for first user, protected for admins (handled in controller)
 
 // Protected routes (require authentication - Admin only)
+userRouter.post("/logout", verifyToken, verifyRole("Admin", "Super Admin"), logout);
 userRouter.get("/me", verifyToken, verifyRole("Admin", "Super Admin"), getMe);
 userRouter.put("/updatepassword", verifyToken, verifyRole("Admin", "Super Admin"), updatePassword);
 

@@ -9,6 +9,7 @@ import {
 import {
   registerArtist,
   loginArtist,
+  logoutArtist,
   getMeArtist,
   updateArtistPassword,
 } from "../controllers/artistAuthController.js";
@@ -21,6 +22,7 @@ ArtistRouter.post("/register", registerArtist);
 ArtistRouter.post("/login", loginArtist);
 
 // Protected routes - Artist profile management
+ArtistRouter.post("/logout", verifyToken, verifyRole("Artist"), logoutArtist);
 ArtistRouter.get("/me", verifyToken, verifyRole("Artist"), getMeArtist);
 ArtistRouter.put("/updatepassword", verifyToken, verifyRole("Artist"), updateArtistPassword);
 

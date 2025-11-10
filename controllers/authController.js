@@ -265,3 +265,18 @@ export const updatePassword = asyncHandler(async (req, res) => {
     token,
   });
 });
+
+/**
+ * @desc    Logout user
+ * @route   POST /api/users/logout
+ * @access  Private
+ */
+export const logout = asyncHandler(async (req, res) => {
+  // Since JWT is stateless, logout is handled client-side by removing the token
+  // This endpoint provides a consistent API and can be used for logging/logout events
+  
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully. Please remove the token from client storage.",
+  });
+});

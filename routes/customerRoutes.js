@@ -9,6 +9,7 @@ import {
 import {
   registerCustomer,
   loginCustomer,
+  logoutCustomer,
   getMeCustomer,
   updateCustomerPassword,
 } from "../controllers/customerAuthController.js";
@@ -21,6 +22,7 @@ customerRouter.post("/register", registerCustomer);
 customerRouter.post("/login", loginCustomer);
 
 // Protected routes - Customer profile management
+customerRouter.post("/logout", verifyToken, verifyRole("Customer"), logoutCustomer);
 customerRouter.get("/me", verifyToken, verifyRole("Customer"), getMeCustomer);
 customerRouter.put("/updatepassword", verifyToken, verifyRole("Customer"), updateCustomerPassword);
 

@@ -46,12 +46,13 @@ export const errorHandler = (err, req, res, next) => {
   if (err.code === 11000) {
     statusCode = 409;
     const field = Object.keys(err.keyPattern || {})[0] || "field";
-    message = `${
-      field.charAt(0).toUpperCase() + field.slice(1)
-    } already exists`;
+    const value = err.keyValue ? err.keyValue[field] : "value";
+    message = `${field.charAt(0).toUpperCase() + field.slice(1)} '${value}' already exists`;
     return res.status(statusCode).json({
       success: false,
       message,
+      field,
+      value,
     });
   }
 
@@ -89,19 +90,54 @@ export const errorHandler = (err, req, res, next) => {
     statusCode = 404;
   }
 
+  // Handle unauthorized errors
+  if (message.toLowerCase().includes("unauthorized") || message.toLowerCase().includes("not authorized")) {
+    statusCode = 401;
+  }
+
+  // Handle forbidden errors
+  if (message.toLowerCase().includes("forbidden")) {
+    statusCode = 403;
+  }
+
+  // Handle validation errors
+  if (message.toLowerCase().includes("validation") || message.toLowerCase().includes("invalid")) {
+    if (statusCode === 500) statusCode = 400;
+  }
+
   // Log error in development
   if (process.env.NODE_ENV === "development") {
-    console.error("Error:", err);
+    console.error("Error Details:", {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+      statusCode,
+    });
+  }
+
+  // Log error in production (without stack trace)
+  if (process.env.NODE_ENV === "production" && statusCode >= 500) {
+    console.error("Server Error:", {
+      name: err.name,
+      message: err.message,
+      statusCode,
+    });
   }
 
   // Default error response
   res.status(statusCode).json({
     success: false,
-    message,
+    message: statusCode >= 500 && process.env.NODE_ENV === "production"
+      ? "Internal server error"
+      : message,
     ...(process.env.NODE_ENV === "development" && {
-      stack: err.stack,
-      error: err.message,
+      error: {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+      },
     }),
+    ...(errors && { errors }),
   });
 };
 

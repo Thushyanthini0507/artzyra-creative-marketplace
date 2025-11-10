@@ -51,5 +51,22 @@ export class BadRequestError extends AppError {
   }
 }
 
+export class InternalServerError extends AppError {
+  constructor(message = 'Internal server error') {
+    super(message, 500);
+  }
+}
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message = 'Service unavailable') {
+    super(message, 503);
+  }
+}
+
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Too many requests') {
+    super(message, 429);
+  }
+}
 
 
