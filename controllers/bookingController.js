@@ -1,78 +1,87 @@
 import Booking from "../models/Booking.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
+import { NotFoundError } from "../utils/errors.js";
 
-// Get all booking
-export const getAllBookings = async (req, res) => {
-  try {
-    const bookings = await Booking.find();
+// Get all bookings with populated customer and artist
+export const getAllBookings = asyncHandler(async (req, res) => {
+  const bookings = await Booking.find()
+    .populate("customer_id", "name email phone")
+    .populate("talent_id", "name category email phone price_per_service rating");
 
-    res.status(200).json({
-      length: bookings.length,
-      bookings,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  res.status(200).json({
+    success: true,
+    length: bookings.length,
+    bookings,
+  });
+});
+
+// Get a booking by Id with populated data
+export const getBookingById = asyncHandler(async (req, res) => {
+  const bookingId = req.params.id;
+  const booking = await Booking.findById(bookingId)
+    .populate("customer_id", "name email phone address")
+    .populate("talent_id", "name category email phone bio experience price_per_service rating");
+
+  if (!booking) {
+    throw new NotFoundError("Booking");
   }
-};
 
-// Get a booking by Id
-export const getBookingById = async (req, res) => {
-  try {
-    const saleId = req.params.id;
-    const booking = await Booking.findById({ _id: saleId });
-
-    if (!booking) return res.status(404).json({ Message: "Booking not found" });
-
-    res.status(200).json(booking);
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(200).json({
+    success: true,
+    booking,
+  });
+});
 
 // Create a booking
-export const createBooking = async (req, res) => {
-  try {
-    const newBooking = new Booking(req.body);
+export const createBooking = asyncHandler(async (req, res) => {
+  const newBooking = new Booking(req.body);
+  const savedBooking = await newBooking.save();
+  
+  // Populate after save
+  await savedBooking.populate("customer_id", "name email phone");
+  await savedBooking.populate("talent_id", "name category email");
 
-    const savedBooking = await newBooking.save();
-    res.status(200).json({
-      Message: "Booking created successfully",
-      Booking: savedBooking,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(201).json({
+    success: true,
+    message: "Booking created successfully",
+    booking: savedBooking,
+  });
+});
 
 // Update a booking by Id
-export const updateBooking = async (req, res) => {
-  try {
-    const saleId = req.params.id;
-    const saleExist = await Booking.findById({ _id: saleId });
-    if (!saleExist) return res.status(404).json({ Error: "booking not found" });
+export const updateBooking = asyncHandler(async (req, res) => {
+  const bookingId = req.params.id;
+  const booking = await Booking.findByIdAndUpdate(
+    bookingId,
+    req.body,
+    { new: true, runValidators: true }
+  )
+    .populate("customer_id", "name email phone")
+    .populate("talent_id", "name category email");
 
-    const updatedBooking = await Booking.findByIdAndUpdate(saleId, req.body, {
-      new: true,
-    });
-    res.status(200).json({
-      Message: "Booking updated successfully",
-      booking: updatedBooking,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  if (!booking) {
+    throw new NotFoundError("Booking");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    message: "Booking updated successfully",
+    booking,
+  });
+});
 
 // Delete a booking by Id
-export const deleteBooking = async (req, res) => {
-  try {
-    const saleId = req.params.id;
-    const booking = await Booking.findByIdAndDelete(saleId);
-    if (!booking) return res.status(404).json({ Message: "Booking not found" });
-    res.status(200).json({
-      Message: "Booking removed successfully",
-      deletedBooking: booking,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+export const deleteBooking = asyncHandler(async (req, res) => {
+  const bookingId = req.params.id;
+  const booking = await Booking.findByIdAndDelete(bookingId);
+
+  if (!booking) {
+    throw new NotFoundError("Booking");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    message: "Booking deleted successfully",
+    deletedBooking: booking,
+  });
+});

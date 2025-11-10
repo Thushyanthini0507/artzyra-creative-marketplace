@@ -14,7 +14,7 @@ const reviewSchema = new mongoose.Schema(
     },
     talent_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Talent",
+      ref: "Artist",
       required: true,
     },
     rating: {

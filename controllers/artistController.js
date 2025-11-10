@@ -1,78 +1,76 @@
 import Artist from "../models/artist.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
+import { NotFoundError } from "../utils/errors.js";
 
-// Get all artist
-export const getAllArtist = async (req, res) => {
-  try {
-    const artists = await Artist.find();
+// Get all artists
+export const getAllArtist = asyncHandler(async (req, res) => {
+  const artists = await Artist.find();
 
-    res.status(200).json({
-      length: artists.length,
-      artists,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  res.status(200).json({
+    success: true,
+    length: artists.length,
+    artists,
+  });
+});
+
+// Get an artist by Id
+export const getArtistById = asyncHandler(async (req, res) => {
+  const artistId = req.params.id;
+  const artist = await Artist.findById(artistId);
+
+  if (!artist) {
+    throw new NotFoundError("Artist");
   }
-};
 
-// Get a artist by Id
-export const getArtistById = async (req, res) => {
-  try {
-    const artistId = req.params.id;
-    const artist = await Artist.findById({ _id: itemId });
+  res.status(200).json({
+    success: true,
+    artist,
+  });
+});
 
-    if (!artist) return res.status(404).json({ Message: "Artist not found" });
+// Create an artist
+export const createArtist = asyncHandler(async (req, res) => {
+  const newArtist = new Artist(req.body);
+  const savedArtist = await newArtist.save();
 
-    res.status(200).json(artist);
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  res.status(201).json({
+    success: true,
+    message: "Artist created successfully",
+    artist: savedArtist,
+  });
+});
+
+// Update an artist by Id
+export const updateArtist = asyncHandler(async (req, res) => {
+  const artistId = req.params.id;
+  const artist = await Artist.findByIdAndUpdate(artistId, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!artist) {
+    throw new NotFoundError("Artist");
   }
-};
 
-// Create a artist
-export const createArtist = async (req, res) => {
-  try {
-    const newArtist = new Artist(req.body);
+  res.status(200).json({
+    success: true,
+    message: "Artist updated successfully",
+    artist,
+  });
+});
 
-    const savedArtist = await newArtist.save();
-    res.status(200).json({
-      Message: "Artist created successfully",
-      Artist: savedArtist,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+// Delete an artist by Id
+export const deleteArtist = asyncHandler(async (req, res) => {
+  const artistId = req.params.id;
+  const artist = await Artist.findByIdAndDelete(artistId);
+
+  if (!artist) {
+    throw new NotFoundError("Artist");
   }
-};
 
-// Update a artist by Id
-export const updateArtist = async (req, res) => {
-  try {
-    const itemId = req.params.id;
-    const itemExist = await Artist.findById({ _id: itemId });
-    if (!itemExist) return res.status(404).json({ Error: "artist not found" });
-
-    const updatedArtist = await Artist.findByIdAndUpdate(itemId, req.body, {
-      new: true,
-    });
-    res.status(200).json({
-      Message: "Artist updated successfully",
-      Artist: updatedArtist,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
-
-// Delete a artist by Id
-export const deleteArtist = async (req, res) => {
-  try {
-    const itemId = req.params.id;
-    const artist = await Artist.findByIdAndDelete(itemId);
-    if (!artist) return res.status(404).json({ Message: "Artist not found" });
-    res.status(200).json({
-      Message: "Artist removed successfully",
-      deletedArtist: artist,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Artist removed successfully",
+    deletedArtist: artist,
+  });
+});

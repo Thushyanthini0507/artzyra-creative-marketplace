@@ -29,11 +29,10 @@ app.use(cors());
 
 // Health check route
 app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Welcome to Artzyra API",
-    version: "1.0.0",
-  });
+  res.send(    "Welcome to Artzyra API"
+  );
+  // console.log("Welcome to Artzyra API");
+  
 });
 
 // API routes

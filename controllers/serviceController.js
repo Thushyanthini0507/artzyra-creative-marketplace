@@ -1,78 +1,76 @@
 import Service from "../models/service.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
+import { NotFoundError } from "../utils/errors.js";
 
-// Get all service
-export const getAllService = async (req, res) => {
-  try {
-    const services = await Service.find();
+// Get all services
+export const getAllService = asyncHandler(async (req, res) => {
+  const services = await Service.find();
 
-    res.status(200).json({
-      length: services.length,
-      services,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(200).json({
+    success: true,
+    length: services.length,
+    services,
+  });
+});
 
 // Get a service by Id
-export const getServiceById = async (req, res) => {
-  try {
-    const serviceId = req.params.id;
-    const service = await Service.findById({ _id: serviceId });
+export const getServiceById = asyncHandler(async (req, res) => {
+  const serviceId = req.params.id;
+  const service = await Service.findById(serviceId);
 
-    if (!service) return res.status(404).json({ Message: "Service not found" });
-
-    res.status(200).json(service);
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  if (!service) {
+    throw new NotFoundError("Service");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    service,
+  });
+});
 
 // Create a service
-export const createService = async (req, res) => {
-  try {
-    const newService = new Service(req.body);
+export const createService = asyncHandler(async (req, res) => {
+  const newService = new Service(req.body);
+  const savedService = await newService.save();
 
-    const savedService = await newService.save();
-    res.status(200).json({
-      Message: "Service created successfully",
-      Service: savedService,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(201).json({
+    success: true,
+    message: "Service created successfully",
+    service: savedService,
+  });
+});
 
 // Update a service by Id
-export const updateService = async (req, res) => {
-  try {
-    const serviceId = req.params.id;
-    const itemExist = await Service.findById({ _id: serviceId });
-    if (!itemExist) return res.status(404).json({ Error: "service not found" });
+export const updateService = asyncHandler(async (req, res) => {
+  const serviceId = req.params.id;
+  const service = await Service.findByIdAndUpdate(serviceId, req.body, {
+    new: true,
+    runValidators: true,
+  });
 
-    const updatedService = await Service.findByIdAndUpdate(serviceId, req.body, {
-      new: true,
-    });
-    res.status(200).json({
-      Message: "Service updated successfully",
-      Service: updatedService,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  if (!service) {
+    throw new NotFoundError("Service");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    message: "Service updated successfully",
+    service,
+  });
+});
 
 // Delete a service by Id
-export const deleteService = async (req, res) => {
-  try {
-    const serviceId = req.params.id;
-    const service = await Service.findByIdAndDelete(serviceId);
-    if (!service) return res.status(404).json({ Message: "Service not found" });
-    res.status(200).json({
-      Message: "Service removed successfully",
-      deletedService: service,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+export const deleteService = asyncHandler(async (req, res) => {
+  const serviceId = req.params.id;
+  const service = await Service.findByIdAndDelete(serviceId);
+
+  if (!service) {
+    throw new NotFoundError("Service");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    message: "Service removed successfully",
+    deletedService: service,
+  });
+});

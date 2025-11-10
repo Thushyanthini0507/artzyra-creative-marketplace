@@ -6,13 +6,15 @@ import {
   getArtistById,
   updateArtist,
 } from "../controllers/artistController.js";
+import { protect, adminOnly } from "../middleware/auth.js";
 
 const ArtistRouter = express.Router();
 
-ArtistRouter.get("/", getAllArtist);
-ArtistRouter.get("/:id", getArtistById);
-ArtistRouter.post("/", createArtist);
-ArtistRouter.put("/:id", updateArtist);
-ArtistRouter.delete("/:id", deleteArtist);
+// All artist routes require admin access
+ArtistRouter.get("/", protect, adminOnly, getAllArtist);
+ArtistRouter.get("/:id", protect, adminOnly, getArtistById);
+ArtistRouter.post("/", protect, adminOnly, createArtist);
+ArtistRouter.put("/:id", protect, adminOnly, updateArtist);
+ArtistRouter.delete("/:id", protect, adminOnly, deleteArtist);
 
 export default ArtistRouter;

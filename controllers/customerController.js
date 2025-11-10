@@ -1,85 +1,76 @@
 import Customer from "../models/Customer.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
+import { NotFoundError } from "../utils/errors.js";
 
-// Get all customer
-export const getAllCustomers = async (req, res) => {
-  try {
-    const customers = await Customer.find();
+// Get all customers
+export const getAllCustomers = asyncHandler(async (req, res) => {
+  const customers = await Customer.find();
 
-    res.status(200).json({
-      length: customers.length,
-      customers,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(200).json({
+    success: true,
+    length: customers.length,
+    customers,
+  });
+});
 
 // Get a customer by Id
-export const getCustomerById = async (req, res) => {
-  try {
-    const customerId = req.params.id;
-    const customer = await Customer.findById({ _id: customerId });
+export const getCustomerById = asyncHandler(async (req, res) => {
+  const customerId = req.params.id;
+  const customer = await Customer.findById(customerId);
 
-    if (!customer)
-      return res.status(404).json({ Message: "Customer not found" });
-
-    res.status(200).json(customer);
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  if (!customer) {
+    throw new NotFoundError("Customer");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    customer,
+  });
+});
 
 // Create a customer
-export const createCustomer = async (req, res) => {
-  try {
-    const newCustomer = new Customer(req.body);
+export const createCustomer = asyncHandler(async (req, res) => {
+  const newCustomer = new Customer(req.body);
+  const savedCustomer = await newCustomer.save();
 
-    const savedCustomer = await newCustomer.save();
-    res.status(200).json({
-      Message: "Customer created successfully",
-      Customer: savedCustomer,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(201).json({
+    success: true,
+    message: "Customer created successfully",
+    customer: savedCustomer,
+  });
+});
 
 // Update a customer by Id
-export const updateCustomer = async (req, res) => {
-  try {
-    const customerId = req.params.id;
-    const customerExist = await Customer.findById({ _id: customerId });
-    if (!customerExist)
-      return res.status(404).json({ Error: "Customer not found" });
+export const updateCustomer = asyncHandler(async (req, res) => {
+  const customerId = req.params.id;
+  const customer = await Customer.findByIdAndUpdate(customerId, req.body, {
+    new: true,
+    runValidators: true,
+  });
 
-    const updatedCustomer = await Customer.findByIdAndUpdate(
-      customerId,
-      req.body,
-      {
-        new: true,
-      }
-    );
-    res.status(200).json({
-      Message: "Customer updated successfully",
-      Customer: updatedCustomer,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  if (!customer) {
+    throw new NotFoundError("Customer");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    message: "Customer updated successfully",
+    customer,
+  });
+});
 
 // Delete a customer by Id
-export const deleteCustomer = async (req, res) => {
-  try {
-    const customerId = req.params.id;
-    const customer = await Customer.findByIdAndDelete(customerId);
-    if (!customer)
-      return res.status(404).json({ Message: "Customer not found" });
-    res.status(200).json({
-      Message: "Customer removed successfully",
-      deletedcustomer: customer,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+export const deleteCustomer = asyncHandler(async (req, res) => {
+  const customerId = req.params.id;
+  const customer = await Customer.findByIdAndDelete(customerId);
+
+  if (!customer) {
+    throw new NotFoundError("Customer");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    message: "Customer removed successfully",
+    deletedCustomer: customer,
+  });
+});

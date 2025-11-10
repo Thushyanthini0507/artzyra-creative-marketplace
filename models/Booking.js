@@ -14,7 +14,7 @@ const bookingSchema = new mongoose.Schema(
     },
     talent_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Talent",
+      ref: "Artist",
       required: true,
     },
     booking_date: {
@@ -41,4 +41,5 @@ const bookingSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-export default mongoose.model("Sale", bookingSchema);
+// Use existing "sales" collection (was previously named Sale)
+export default mongoose.model("Booking", bookingSchema, "sales");

@@ -1,79 +1,83 @@
 import Payment from "../models/Payment.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
+import { NotFoundError } from "../utils/errors.js";
 
+// Get all payments with populated customer
+export const getAllPayment = asyncHandler(async (req, res) => {
+  const payments = await Payment.find()
+    .populate("customer_id", "name email phone address");
 
-// Get all payment
-export const getAllPayment = async (req, res) => {
-  try {
-    const payments = await Payment.find();
+  res.status(200).json({
+    success: true,
+    length: payments.length,
+    payments,
+  });
+});
 
-    res.status(200).json({
-      length: payments.length,
-      payments,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+// Get a payment by Id with populated customer
+export const getPaymentById = asyncHandler(async (req, res) => {
+  const paymentId = req.params.id;
+  const payment = await Payment.findById(paymentId)
+    .populate("customer_id", "name email phone address");
+
+  if (!payment) {
+    throw new NotFoundError("Payment");
   }
-};
 
-// Get a payment by Id
-export const getPaymentById = async (req, res) => {
-  try {
-    const artistId = req.params.id;
-    const payment = await Payment.findById({ _id: itemId });
-
-    if (!payment) return res.status(404).json({ Message: "Payment not found" });
-
-    res.status(200).json(payment);
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(200).json({
+    success: true,
+    payment,
+  });
+});
 
 // Create a payment
-export const createPayment = async (req, res) => {
-  try {
-    const newPayment = new Payment(req.body);
+export const createPayment = asyncHandler(async (req, res) => {
+  const newPayment = new Payment(req.body);
+  const savedPayment = await newPayment.save();
+  
+  // Populate after save
+  await savedPayment.populate("customer_id", "name email phone");
 
-    const savedPayment = await newPayment.save();
-    res.status(200).json({
-      Message: "Payment created successfully",
-      Payment: savedPayment,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(201).json({
+    success: true,
+    message: "Payment created successfully",
+    payment: savedPayment,
+  });
+});
 
 // Update a payment by Id
-export const updatePayment = async (req, res) => {
-  try {
-    const itemId = req.params.id;
-    const itemExist = await Payment.findById({ _id: itemId });
-    if (!itemExist) return res.status(404).json({ Error: "payment not found" });
+export const updatePayment = asyncHandler(async (req, res) => {
+  const paymentId = req.params.id;
+  const payment = await Payment.findByIdAndUpdate(
+    paymentId,
+    req.body,
+    { new: true, runValidators: true }
+  )
+    .populate("customer_id", "name email phone");
 
-    const updatedPayment = await Payment.findByIdAndUpdate(itemId, req.body, {
-      new: true,
-    });
-    res.status(200).json({
-      Message: "Payment updated successfully",
-      Payment: updatedPayment,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  if (!payment) {
+    throw new NotFoundError("Payment");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    message: "Payment updated successfully",
+    payment,
+  });
+});
 
 // Delete a payment by Id
-export const deletePayment = async (req, res) => {
-  try {
-    const itemId = req.params.id;
-    const payment = await Payment.findByIdAndDelete(itemId);
-    if (!payment) return res.status(404).json({ Message: "Payment not found" });
-    res.status(200).json({
-      Message: "Payment removed successfully",
-      deletedPayment: payment,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+export const deletePayment = asyncHandler(async (req, res) => {
+  const paymentId = req.params.id;
+  const payment = await Payment.findByIdAndDelete(paymentId);
+
+  if (!payment) {
+    throw new NotFoundError("Payment");
   }
-};
+
+  res.status(200).json({
+    success: true,
+    message: "Payment deleted successfully",
+    deletedPayment: payment,
+  });
+});

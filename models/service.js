@@ -18,4 +18,5 @@ const ServiceCategorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("ServiceCategory", ServiceCategorySchema);
+// Use existing "servicecategories" collection (was previously named ServiceCategory)
+export default mongoose.model("Service", ServiceCategorySchema, "servicecategories");

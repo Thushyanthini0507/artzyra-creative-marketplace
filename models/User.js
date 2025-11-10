@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema(
   {
@@ -20,10 +22,12 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+      minlength: 6,
+      select: false, // Don't return password by default
     },
     role: {
       type: String,
-      enum: ["Super Admin", "Moderator", "Admin"],
+      enum: ["Super Admin", "Moderator","Designer", "Admin"],
       default: "Admin",
     },
     contact_number: {
@@ -32,5 +36,28 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Hash password before saving
+userSchema.pre("save", async function (next) {
+  // Only hash password if it's been modified (or is new)
+  if (!this.isModified("password")) {
+    next();
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Match user entered password to hashed password in database
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Generate JWT token
+userSchema.methods.getSignedJwtToken = function () {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  });
+};
 
 export default mongoose.model("User", userSchema);

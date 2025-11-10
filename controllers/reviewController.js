@@ -1,85 +1,87 @@
-import Customer from "../models/review.js";
+import Review from "../models/review.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
+import { NotFoundError } from "../utils/errors.js";
 
-// Get all customer
-export const getAllCustomers = async (req, res) => {
-  try {
-    const customers = await Customer.find();
+// Get all reviews with populated customer and artist
+export const getAllReviews = asyncHandler(async (req, res) => {
+  const reviews = await Review.find()
+    .populate("customer_id", "name email phone")
+    .populate("talent_id", "name category email rating");
 
-    res.status(200).json({
-      length: customers.length,
-      customers,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  res.status(200).json({
+    success: true,
+    length: reviews.length,
+    reviews,
+  });
+});
+
+// Get a review by Id with populated data
+export const getReviewById = asyncHandler(async (req, res) => {
+  const reviewId = req.params.id;
+  const review = await Review.findById(reviewId)
+    .populate("customer_id", "name email phone address")
+    .populate("talent_id", "name category email bio rating");
+
+  if (!review) {
+    throw new NotFoundError("Review");
   }
-};
 
-// Get a customer by Id
-export const getCustomerById = async (req, res) => {
-  try {
-    const customerId = req.params.id;
-    const customer = await Customer.findById({ _id: customerId });
+  res.status(200).json({
+    success: true,
+    review,
+  });
+});
 
-    if (!customer)
-      return res.status(404).json({ Message: "Customer not found" });
+// Create a review
+export const createReview = asyncHandler(async (req, res) => {
+  const newReview = new Review(req.body);
+  const savedReview = await newReview.save();
+  
+  // Populate after save
+  await savedReview.populate("customer_id", "name email");
+  await savedReview.populate("talent_id", "name category");
 
-    res.status(200).json(customer);
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+  res.status(201).json({
+    success: true,
+    message: "Review created successfully",
+    review: savedReview,
+  });
+});
+
+// Update a review by Id
+export const updateReview = asyncHandler(async (req, res) => {
+  const reviewId = req.params.id;
+  const review = await Review.findByIdAndUpdate(
+    reviewId,
+    req.body,
+    { new: true, runValidators: true }
+  )
+    .populate("customer_id", "name email")
+    .populate("talent_id", "name category");
+
+  if (!review) {
+    throw new NotFoundError("Review");
   }
-};
 
-// Create a customer
-export const createCustomer = async (req, res) => {
-  try {
-    const newCustomer = new Customer(req.body);
+  res.status(200).json({
+    success: true,
+    message: "Review updated successfully",
+    review,
+  });
+});
 
-    const savedCustomer = await newCustomer.save();
-    res.status(200).json({
-      Message: "Customer created successfully",
-      Customer: savedCustomer,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
+// Delete a review by Id
+export const deleteReview = asyncHandler(async (req, res) => {
+  const reviewId = req.params.id;
+  const review = await Review.findByIdAndDelete(reviewId);
+
+  if (!review) {
+    throw new NotFoundError("Review");
   }
-};
 
-// Update a customer by Id
-export const updateCustomer = async (req, res) => {
-  try {
-    const customerId = req.params.id;
-    const customerExist = await Customer.findById({ _id: customerId });
-    if (!customerExist)
-      return res.status(404).json({ Error: "Customer not found" });
-
-    const updatedCustomer = await Customer.findByIdAndUpdate(
-      customerId,
-      req.body,
-      {
-        new: true,
-      }
-    );
-    res.status(200).json({
-      Message: "Customer updated successfully",
-      Customer: updatedCustomer,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
-
-// Delete a customer by Id
-export const deleteCustomer = async (req, res) => {
-  try {
-    const customerId = req.params.id;
-    const customer = await Customer.findByIdAndDelete(customerId);
-    if (!customer)
-      return res.status(404).json({ Message: "Customer not found" });
-    res.status(200).json({
-      Message: "Customer removed successfully",
-      deletedcustomer: customer,
-    });
-  } catch (error) {
-    res.status(500).json({ Error: error.message });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Review deleted successfully",
+    deletedReview: review,
+  });
+});
