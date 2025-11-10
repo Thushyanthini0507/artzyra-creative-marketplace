@@ -11,7 +11,7 @@ import { protect, adminOnly } from "../middleware/auth.js";
 const ArtistRouter = express.Router();
 
 // All artist routes require admin access
-ArtistRouter.get("/", protect, adminOnly, getAllArtist);
+ArtistRouter.get("/", protect,  getAllArtist);
 ArtistRouter.get("/:id", protect, adminOnly, getArtistById);
 ArtistRouter.post("/", protect, adminOnly, createArtist);
 ArtistRouter.put("/:id", protect, adminOnly, updateArtist);
