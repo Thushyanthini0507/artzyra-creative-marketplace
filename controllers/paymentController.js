@@ -16,8 +16,8 @@ export const getAllPayment = asyncHandler(async (req, res) => {
 
 // Get a payment by Id with populated customer
 export const getPaymentById = asyncHandler(async (req, res) => {
-  const paymentId = req.params.id;
-  const payment = await Payment.findById(paymentId)
+  const { id } = req.params;
+  const payment = await Payment.findById(id)
     .populate("customer_id", "name email phone address");
 
   if (!payment) {
@@ -32,7 +32,8 @@ export const getPaymentById = asyncHandler(async (req, res) => {
 
 // Create a payment
 export const createPayment = asyncHandler(async (req, res) => {
-  const newPayment = new Payment(req.body);
+  const paymentData = req.body;
+  const newPayment = new Payment(paymentData);
   const savedPayment = await newPayment.save();
   
   // Populate after save
@@ -47,10 +48,11 @@ export const createPayment = asyncHandler(async (req, res) => {
 
 // Update a payment by Id
 export const updatePayment = asyncHandler(async (req, res) => {
-  const paymentId = req.params.id;
+  const { id } = req.params;
+  const updateData = req.body;
   const payment = await Payment.findByIdAndUpdate(
-    paymentId,
-    req.body,
+    id,
+    updateData,
     { new: true, runValidators: true }
   )
     .populate("customer_id", "name email phone");
@@ -68,8 +70,8 @@ export const updatePayment = asyncHandler(async (req, res) => {
 
 // Delete a payment by Id
 export const deletePayment = asyncHandler(async (req, res) => {
-  const paymentId = req.params.id;
-  const payment = await Payment.findByIdAndDelete(paymentId);
+  const { id } = req.params;
+  const payment = await Payment.findByIdAndDelete(id);
 
   if (!payment) {
     throw new NotFoundError("Payment");

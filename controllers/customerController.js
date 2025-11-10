@@ -15,8 +15,8 @@ export const getAllCustomers = asyncHandler(async (req, res) => {
 
 // Get a customer by Id
 export const getCustomerById = asyncHandler(async (req, res) => {
-  const customerId = req.params.id;
-  const customer = await Customer.findById(customerId);
+  const { id } = req.params;
+  const customer = await Customer.findById(id);
 
   if (!customer) {
     throw new NotFoundError("Customer");
@@ -30,7 +30,8 @@ export const getCustomerById = asyncHandler(async (req, res) => {
 
 // Create a customer
 export const createCustomer = asyncHandler(async (req, res) => {
-  const newCustomer = new Customer(req.body);
+  const customerData = req.body;
+  const newCustomer = new Customer(customerData);
   const savedCustomer = await newCustomer.save();
 
   res.status(201).json({
@@ -42,8 +43,9 @@ export const createCustomer = asyncHandler(async (req, res) => {
 
 // Update a customer by Id
 export const updateCustomer = asyncHandler(async (req, res) => {
-  const customerId = req.params.id;
-  const customer = await Customer.findByIdAndUpdate(customerId, req.body, {
+  const { id } = req.params;
+  const updateData = req.body;
+  const customer = await Customer.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
   });
@@ -61,8 +63,8 @@ export const updateCustomer = asyncHandler(async (req, res) => {
 
 // Delete a customer by Id
 export const deleteCustomer = asyncHandler(async (req, res) => {
-  const customerId = req.params.id;
-  const customer = await Customer.findByIdAndDelete(customerId);
+  const { id } = req.params;
+  const customer = await Customer.findByIdAndDelete(id);
 
   if (!customer) {
     throw new NotFoundError("Customer");

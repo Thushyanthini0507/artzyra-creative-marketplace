@@ -167,8 +167,8 @@ export const getAllUsers = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const getUserById = asyncHandler(async (req, res) => {
-  const userId = req.params.id;
-  const user = await User.findById(userId).select("-password");
+  const { id } = req.params;
+  const user = await User.findById(id).select("-password");
 
   if (!user) {
     throw new NotFoundError("User");
@@ -186,12 +186,12 @@ export const getUserById = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 export const updateUser = asyncHandler(async (req, res) => {
-  const userId = req.params.id;
-
+  const { id } = req.params;
+  
   // Don't allow password update through this route
   const { password, ...updateData } = req.body;
 
-  const user = await User.findByIdAndUpdate(userId, updateData, {
+  const user = await User.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
   }).select("-password");
@@ -213,14 +213,14 @@ export const updateUser = asyncHandler(async (req, res) => {
  * @access  Private/Super Admin
  */
 export const deleteUser = asyncHandler(async (req, res) => {
-  const userId = req.params.id;
-
+  const { id } = req.params;
+  
   // Prevent self-deletion
-  if (userId === req.user.id) {
+  if (id === req.user.id) {
     throw new BadRequestError("You cannot delete your own account");
   }
 
-  const user = await User.findByIdAndDelete(userId);
+  const user = await User.findByIdAndDelete(id);
 
   if (!user) {
     throw new NotFoundError("User");
@@ -239,13 +239,14 @@ export const deleteUser = asyncHandler(async (req, res) => {
  */
 export const updatePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
+  const { id } = req.user;
 
   if (!currentPassword || !newPassword) {
     throw new BadRequestError("Please provide current and new password");
   }
 
   // Get user with password
-  const user = await User.findById(req.user.id).select("+password");
+  const user = await User.findById(id).select("+password");
 
   // Check current password
   if (!(await user.matchPassword(currentPassword))) {

@@ -15,8 +15,8 @@ export const getAllArtist = asyncHandler(async (req, res) => {
 
 // Get an artist by Id
 export const getArtistById = asyncHandler(async (req, res) => {
-  const artistId = req.params.id;
-  const artist = await Artist.findById(artistId);
+  const { id } = req.params;
+  const artist = await Artist.findById(id);
 
   if (!artist) {
     throw new NotFoundError("Artist");
@@ -30,7 +30,8 @@ export const getArtistById = asyncHandler(async (req, res) => {
 
 // Create an artist
 export const createArtist = asyncHandler(async (req, res) => {
-  const newArtist = new Artist(req.body);
+  const artistData = req.body;
+  const newArtist = new Artist(artistData);
   const savedArtist = await newArtist.save();
 
   res.status(201).json({
@@ -42,8 +43,9 @@ export const createArtist = asyncHandler(async (req, res) => {
 
 // Update an artist by Id
 export const updateArtist = asyncHandler(async (req, res) => {
-  const artistId = req.params.id;
-  const artist = await Artist.findByIdAndUpdate(artistId, req.body, {
+  const { id } = req.params;
+  const updateData = req.body;
+  const artist = await Artist.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
   });
@@ -61,8 +63,8 @@ export const updateArtist = asyncHandler(async (req, res) => {
 
 // Delete an artist by Id
 export const deleteArtist = asyncHandler(async (req, res) => {
-  const artistId = req.params.id;
-  const artist = await Artist.findByIdAndDelete(artistId);
+  const { id } = req.params;
+  const artist = await Artist.findByIdAndDelete(id);
 
   if (!artist) {
     throw new NotFoundError("Artist");

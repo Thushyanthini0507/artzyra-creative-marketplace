@@ -15,8 +15,8 @@ export const getAllService = asyncHandler(async (req, res) => {
 
 // Get a service by Id
 export const getServiceById = asyncHandler(async (req, res) => {
-  const serviceId = req.params.id;
-  const service = await Service.findById(serviceId);
+  const { id } = req.params;
+  const service = await Service.findById(id);
 
   if (!service) {
     throw new NotFoundError("Service");
@@ -30,7 +30,8 @@ export const getServiceById = asyncHandler(async (req, res) => {
 
 // Create a service
 export const createService = asyncHandler(async (req, res) => {
-  const newService = new Service(req.body);
+  const serviceData = req.body;
+  const newService = new Service(serviceData);
   const savedService = await newService.save();
 
   res.status(201).json({
@@ -42,8 +43,9 @@ export const createService = asyncHandler(async (req, res) => {
 
 // Update a service by Id
 export const updateService = asyncHandler(async (req, res) => {
-  const serviceId = req.params.id;
-  const service = await Service.findByIdAndUpdate(serviceId, req.body, {
+  const { id } = req.params;
+  const updateData = req.body;
+  const service = await Service.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
   });
@@ -61,8 +63,8 @@ export const updateService = asyncHandler(async (req, res) => {
 
 // Delete a service by Id
 export const deleteService = asyncHandler(async (req, res) => {
-  const serviceId = req.params.id;
-  const service = await Service.findByIdAndDelete(serviceId);
+  const { id } = req.params;
+  const service = await Service.findByIdAndDelete(id);
 
   if (!service) {
     throw new NotFoundError("Service");

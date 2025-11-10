@@ -17,8 +17,8 @@ export const getAllReviews = asyncHandler(async (req, res) => {
 
 // Get a review by Id with populated data
 export const getReviewById = asyncHandler(async (req, res) => {
-  const reviewId = req.params.id;
-  const review = await Review.findById(reviewId)
+  const { id } = req.params;
+  const review = await Review.findById(id)
     .populate("customer_id", "name email phone address")
     .populate("talent_id", "name category email bio rating");
 
@@ -34,7 +34,8 @@ export const getReviewById = asyncHandler(async (req, res) => {
 
 // Create a review
 export const createReview = asyncHandler(async (req, res) => {
-  const newReview = new Review(req.body);
+  const reviewData = req.body;
+  const newReview = new Review(reviewData);
   const savedReview = await newReview.save();
   
   // Populate after save
@@ -50,10 +51,11 @@ export const createReview = asyncHandler(async (req, res) => {
 
 // Update a review by Id
 export const updateReview = asyncHandler(async (req, res) => {
-  const reviewId = req.params.id;
+  const { id } = req.params;
+  const updateData = req.body;
   const review = await Review.findByIdAndUpdate(
-    reviewId,
-    req.body,
+    id,
+    updateData,
     { new: true, runValidators: true }
   )
     .populate("customer_id", "name email")
@@ -72,8 +74,8 @@ export const updateReview = asyncHandler(async (req, res) => {
 
 // Delete a review by Id
 export const deleteReview = asyncHandler(async (req, res) => {
-  const reviewId = req.params.id;
-  const review = await Review.findByIdAndDelete(reviewId);
+  const { id } = req.params;
+  const review = await Review.findByIdAndDelete(id);
 
   if (!review) {
     throw new NotFoundError("Review");

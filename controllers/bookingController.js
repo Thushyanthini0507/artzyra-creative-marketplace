@@ -17,8 +17,8 @@ export const getAllBookings = asyncHandler(async (req, res) => {
 
 // Get a booking by Id with populated data
 export const getBookingById = asyncHandler(async (req, res) => {
-  const bookingId = req.params.id;
-  const booking = await Booking.findById(bookingId)
+  const { id } = req.params;
+  const booking = await Booking.findById(id)
     .populate("customer_id", "name email phone address")
     .populate("talent_id", "name category email phone bio experience price_per_service rating");
 
@@ -34,7 +34,8 @@ export const getBookingById = asyncHandler(async (req, res) => {
 
 // Create a booking
 export const createBooking = asyncHandler(async (req, res) => {
-  const newBooking = new Booking(req.body);
+  const bookingData = req.body;
+  const newBooking = new Booking(bookingData);
   const savedBooking = await newBooking.save();
   
   // Populate after save
@@ -50,10 +51,11 @@ export const createBooking = asyncHandler(async (req, res) => {
 
 // Update a booking by Id
 export const updateBooking = asyncHandler(async (req, res) => {
-  const bookingId = req.params.id;
+  const { id } = req.params;
+  const updateData = req.body;
   const booking = await Booking.findByIdAndUpdate(
-    bookingId,
-    req.body,
+    id,
+    updateData,
     { new: true, runValidators: true }
   )
     .populate("customer_id", "name email phone")
@@ -72,8 +74,8 @@ export const updateBooking = asyncHandler(async (req, res) => {
 
 // Delete a booking by Id
 export const deleteBooking = asyncHandler(async (req, res) => {
-  const bookingId = req.params.id;
-  const booking = await Booking.findByIdAndDelete(bookingId);
+  const { id } = req.params;
+  const booking = await Booking.findByIdAndDelete(id);
 
   if (!booking) {
     throw new NotFoundError("Booking");
