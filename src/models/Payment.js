@@ -1,15 +1,12 @@
 import mongoose from "mongoose";
+import Customer from "./Customer.js";
+import service from "./service.js";
 
 const paymentSchema = new mongoose.Schema(
   {
-    payment_id: {
-      type: String,
-      unique: true,
-      required: true,
-    },
     customer_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Customer",
+      ref: Customer,
       required: true,
     },
     service_type: {
@@ -18,7 +15,8 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
     service_id: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: service,
       required: true,
     },
     amount: {

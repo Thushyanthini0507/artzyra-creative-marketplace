@@ -4,11 +4,7 @@ import jwt from "jsonwebtoken";
 
 const customerSchema = new mongoose.Schema(
   {
-    customer_id: {
-      type: String,
-      unique: true,
-      required: true,
-    },
+  
     name: {
       type: String,
       required: true,

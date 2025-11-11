@@ -1,20 +1,17 @@
 import mongoose from "mongoose";
+import Customer from "./Customer.js";
+import artist from "./artist.js";
 
 const bookingSchema = new mongoose.Schema(
   {
-    booking_id: {
-      type: String,
-      unique: true,
-      required: true,
-    },
-    customer_id: {
+        customer_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Customer",
+      ref: Customer,
       required: true,
     },
     talent_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Artist",
+      ref: artist,
       required: true,
     },
     booking_date: {
