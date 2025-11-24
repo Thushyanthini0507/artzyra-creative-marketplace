@@ -2,8 +2,9 @@
  * User Controller
  * Handles registration with centralized Users collection
  * Flow: 
- * - Customers/Artists: Save to pending tables → Admin approves → Move to Users + profile
- * - Category users: Create User in Users collection first → Then create role-specific profile
+ * - Customers: Direct to Users table (instant access, no approval needed)
+ * - Artists: Save to pending table → Admin approves → Move to Users + profile
+ * - Category users: Create User in Users collection → Then create role-specific profile
  */
 import mongoose from "mongoose";
 import User from "../models/User.js";
@@ -11,7 +12,6 @@ import Admin from "../models/Admin.js";
 import Artist from "../models/Artist.js";
 import Customer from "../models/Customer.js";
 import CategoryUser from "../models/CategoryUser.js";
-import PendingCustomer from "../models/PendingCustomer.js";
 import PendingArtist from "../models/PendingArtist.js";
 import Category from "../models/Category.js";
 import {
@@ -24,8 +24,9 @@ import { generateToken } from "../config/jwt.js";
 
 /**
  * Register a new user
- * For Customers/Artists: Save to pending tables (requires admin approval)
- * For Category users: Create User in Users collection → Then create profile
+ * - Customers: Direct to Users table (instant access, no approval)
+ * - Artists: Save to pending table (requires admin approval)
+ * - Category users: Create User in Users collection → Then create profile
  * @route POST /api/users/register
  */
 export const registerUser = asyncHandler(async (req, res) => {

@@ -3,6 +3,9 @@
  * Handles artist profile management, bookings, reviews, and availability
  */
 import Artist from "../models/Artist.js";
+import PendingArtist from "../models/PendingArtist.js";
+import User from "../models/User.js";
+import Customer from "../models/Customer.js";
 import Booking from "../models/Booking.js";
 import Review from "../models/Review.js";
 import Category from "../models/Category.js";
@@ -12,6 +15,7 @@ import {
   NotFoundError,
   BadRequestError,
   ForbiddenError,
+  ConflictError,
 } from "../utils/errors.js";
 import { asyncHandler } from "../middleware/authMiddleware.js";
 import { formatPaginationResponse } from "../utils/paginate.js";
@@ -21,12 +25,13 @@ import { formatPaginationResponse } from "../utils/paginate.js";
  * @route GET /api/artist/profile
  */
 export const getProfile = asyncHandler(async (req, res) => {
-  const artist = await Artist.findById(req.userId)
+  // Find artist profile by userId (req.userId is the User ID)
+  const artist = await Artist.findOne({ userId: req.userId })
     .populate("category", "name description image")
     .select("-password");
 
   if (!artist) {
-    throw new NotFoundError("Artist not found");
+    throw new NotFoundError("Artist");
   }
 
   res.json({
@@ -53,25 +58,39 @@ export const updateProfile = asyncHandler(async (req, res) => {
     profileImage,
   } = req.body;
 
-  const updateData = {};
-  if (name) updateData.name = name;
-  if (phone) updateData.phone = phone;
-  if (bio !== undefined) updateData.bio = bio;
-  if (category) updateData.category = category;
-  if (skills) updateData.skills = skills;
-  if (hourlyRate !== undefined) updateData.hourlyRate = hourlyRate;
-  if (availability) updateData.availability = availability;
-  if (profileImage !== undefined) updateData.profileImage = profileImage;
+  // Separate Artist profile fields from User fields
+  const artistUpdateData = {};
+  if (bio !== undefined) artistUpdateData.bio = bio;
+  if (category) artistUpdateData.category = category;
+  if (skills) artistUpdateData.skills = skills;
+  if (hourlyRate !== undefined) artistUpdateData.hourlyRate = hourlyRate;
+  if (availability) artistUpdateData.availability = availability;
+  if (profileImage !== undefined) artistUpdateData.profileImage = profileImage;
 
-  const artist = await Artist.findByIdAndUpdate(req.userId, updateData, {
-    new: true,
-    runValidators: true,
-  })
+  // Update User collection if name or phone changed (name and phone are in User, not Artist)
+  if (name || phone) {
+    const userUpdateData = {};
+    if (name) userUpdateData.name = name;
+    if (phone) userUpdateData.phone = phone;
+    await User.findByIdAndUpdate(req.userId, userUpdateData, {
+      runValidators: true,
+    });
+  }
+
+  // Find artist profile by userId (req.userId is the User ID)
+  const artist = await Artist.findOneAndUpdate(
+    { userId: req.userId },
+    artistUpdateData,
+    {
+      new: true,
+      runValidators: true,
+    }
+  )
     .populate("category", "name description image")
     .select("-password");
 
   if (!artist) {
-    throw new NotFoundError("Artist not found");
+    throw new NotFoundError("Artist");
   }
 
   res.json({
@@ -107,8 +126,14 @@ export const getBookings = asyncHandler(async (req, res) => {
     sortOrder = "desc",
   } = req.query;
 
-  // Base query - only get bookings for this artist
-  const query = { artist: req.userId };
+  // Find artist profile to get the artist ID
+  const artistProfile = await Artist.findOne({ userId: req.userId });
+  if (!artistProfile) {
+    throw new NotFoundError("Artist");
+  }
+
+  // Base query - only get bookings for this artist (use Artist profile ID, not User ID)
+  const query = { artist: artistProfile._id };
 
   // STATUS FILTERS
   if (status) {
@@ -181,16 +206,29 @@ export const getBookings = asyncHandler(async (req, res) => {
 export const acceptBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
 
-  const booking = await Booking.findById(bookingId)
-    .populate("customer", "name email")
-    .populate("artist", "name");
-
-  if (!booking) {
-    throw new NotFoundError("Booking not found");
+  // Get booking without populate first to check raw customer value
+  const bookingRaw = await Booking.findById(bookingId);
+  if (!bookingRaw) {
+    throw new NotFoundError("Booking");
   }
 
-  // Check authorization
-  if (booking.artist._id.toString() !== req.userId.toString()) {
+  // Populate artist and customer
+  const booking = await Booking.findById(bookingId)
+    .populate("artist", "name")
+    .populate("customer", "name email");
+
+  if (!booking.artist) {
+    throw new NotFoundError("Artist associated with this booking");
+  }
+
+  // Find artist profile to get the artist ID for authorization check
+  const artistProfile = await Artist.findOne({ userId: req.userId });
+  if (!artistProfile) {
+    throw new NotFoundError("Artist");
+  }
+
+  // Check authorization (compare Artist profile ID, not User ID)
+  if (booking.artist._id.toString() !== artistProfile._id.toString()) {
     throw new ForbiddenError("You are not authorized to accept this booking");
   }
 
@@ -198,20 +236,45 @@ export const acceptBooking = asyncHandler(async (req, res) => {
     throw new BadRequestError(`Booking is already ${booking.status}`);
   }
 
+  // Handle customer reference - might be User ID or Customer profile ID
+  let customerUserId = null;
+  let customerName = "Customer";
+  
+  if (booking.customer && booking.customer._id) {
+    // Customer was successfully populated (Customer profile ID was used)
+    const customerProfile = await Customer.findById(booking.customer._id);
+    if (customerProfile) {
+      customerUserId = customerProfile.userId;
+      customerName = booking.customer.name || "Customer";
+    }
+  } else {
+    // Customer populate failed - booking.customer field contains User ID directly
+    // Use the raw customer value from bookingRaw
+    const user = await User.findById(bookingRaw.customer);
+    if (user) {
+      customerUserId = user._id;
+      customerName = user.name || "Customer";
+    } else {
+      throw new NotFoundError("Customer associated with this booking");
+    }
+  }
+
   booking.status = "accepted";
   await booking.save();
 
-  // Create notification for customer
-  await createNotification(
-    Notification,
-    booking.customer._id,
-    "Customer",
-    "booking_accepted",
-    "Booking Accepted",
-    `Your booking has been accepted by ${booking.artist.name}.`,
-    booking._id,
-    "Booking"
-  );
+  // Create notification for customer (use User ID)
+  if (customerUserId) {
+    await createNotification(
+      Notification,
+      customerUserId,
+      "Customer",
+      "booking_accepted",
+      "Booking Accepted",
+      `Your booking has been accepted by ${booking.artist.name}.`,
+      booking._id,
+      "Booking"
+    );
+  }
 
   res.json({
     success: true,
@@ -230,16 +293,29 @@ export const rejectBooking = asyncHandler(async (req, res) => {
   const { bookingId } = req.params;
   const { reason } = req.body;
 
-  const booking = await Booking.findById(bookingId)
-    .populate("customer", "name email")
-    .populate("artist", "name");
-
-  if (!booking) {
-    throw new NotFoundError("Booking not found");
+  // Get booking without populate first to check raw customer value
+  const bookingRaw = await Booking.findById(bookingId);
+  if (!bookingRaw) {
+    throw new NotFoundError("Booking");
   }
 
-  // Check authorization
-  if (booking.artist._id.toString() !== req.userId.toString()) {
+  // Populate artist and customer
+  const booking = await Booking.findById(bookingId)
+    .populate("artist", "name")
+    .populate("customer", "name email");
+
+  if (!booking.artist) {
+    throw new NotFoundError("Artist associated with this booking");
+  }
+
+  // Find artist profile to get the artist ID for authorization check
+  const artistProfile = await Artist.findOne({ userId: req.userId });
+  if (!artistProfile) {
+    throw new NotFoundError("Artist");
+  }
+
+  // Check authorization (compare Artist profile ID, not User ID)
+  if (booking.artist._id.toString() !== artistProfile._id.toString()) {
     throw new ForbiddenError("You are not authorized to reject this booking");
   }
 
@@ -247,20 +323,45 @@ export const rejectBooking = asyncHandler(async (req, res) => {
     throw new BadRequestError(`Booking is already ${booking.status}`);
   }
 
+  // Handle customer reference - might be User ID or Customer profile ID
+  let customerUserId = null;
+  let customerName = "Customer";
+  
+  if (booking.customer && booking.customer._id) {
+    // Customer was successfully populated (Customer profile ID was used)
+    const customerProfile = await Customer.findById(booking.customer._id);
+    if (customerProfile) {
+      customerUserId = customerProfile.userId;
+      customerName = booking.customer.name || "Customer";
+    }
+  } else {
+    // Customer populate failed - booking.customer field contains User ID directly
+    // Use the raw customer value from bookingRaw
+    const user = await User.findById(bookingRaw.customer);
+    if (user) {
+      customerUserId = user._id;
+      customerName = user.name || "Customer";
+    } else {
+      throw new NotFoundError("Customer associated with this booking");
+    }
+  }
+
   booking.status = "rejected";
   await booking.save();
 
-  // Create notification for customer
-  await createNotification(
-    Notification,
-    booking.customer._id,
-    "Customer",
-    "booking_rejected",
-    "Booking Rejected",
-    `Your booking has been rejected.${reason ? ` Reason: ${reason}` : ""}`,
-    booking._id,
-    "Booking"
-  );
+  // Create notification for customer (use User ID)
+  if (customerUserId) {
+    await createNotification(
+      Notification,
+      customerUserId,
+      "Customer",
+      "booking_rejected",
+      "Booking Rejected",
+      `Your booking has been rejected.${reason ? ` Reason: ${reason}` : ""}`,
+      booking._id,
+      "Booking"
+    );
+  }
 
   res.json({
     success: true,
@@ -271,58 +372,6 @@ export const rejectBooking = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * Check availability
- * @route GET /api/artist/availability
- */
-export const checkAvailability = asyncHandler(async (req, res) => {
-  const { date, startTime, endTime } = req.query;
-
-  if (!date || !startTime || !endTime) {
-    throw new BadRequestError("Please provide date, startTime, and endTime");
-  }
-
-  const artist = await Artist.findById(req.userId);
-  if (!artist) {
-    throw new NotFoundError("Artist not found");
-  }
-
-  const isAvailable = isTimeSlotAvailable(
-    artist.availability,
-    date,
-    startTime,
-    endTime
-  );
-
-  // Check for existing bookings
-  const existingBooking = await Booking.findOne({
-    artist: req.userId,
-    bookingDate: new Date(date),
-    status: { $in: ["pending", "accepted"] },
-    $or: [
-      {
-        startTime: { $lte: startTime },
-        endTime: { $gte: startTime },
-      },
-      {
-        startTime: { $lte: endTime },
-        endTime: { $gte: endTime },
-      },
-    ],
-  });
-
-  const available = isAvailable && !existingBooking;
-
-  res.json({
-    success: true,
-    data: {
-      available,
-      message: available
-        ? "Time slot is available"
-        : "Time slot is not available",
-    },
-  });
-});
 
 /**
  * Get artist reviews with search and filtering
@@ -345,9 +394,15 @@ export const getReviews = asyncHandler(async (req, res) => {
     sortOrder = "desc",
   } = req.query;
 
-  // Base query - only visible reviews for this artist
+  // Find artist profile to get the artist ID
+  const artistProfile = await Artist.findOne({ userId: req.userId });
+  if (!artistProfile) {
+    throw new NotFoundError("Artist");
+  }
+
+  // Base query - only visible reviews for this artist (use Artist profile ID, not User ID)
   const query = {
-    artist: req.userId,
+    artist: artistProfile._id,
     isVisible: true,
   };
 
@@ -404,63 +459,182 @@ export const getReviews = asyncHandler(async (req, res) => {
 /**
  * Get all pending artists (admin only)
  * @route GET /api/artists/pending
+ * Query params: search, status, category, page, limit, sortBy, sortOrder
  */
 export const getPendingArtists = asyncHandler(async (req, res) => {
-  const pendingArtists = await Artist.find({ isApproved: false })
+  const {
+    search,
+    status,
+    category,
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = req.query;
+
+  const query = {};
+
+  // Status filter
+  if (status) {
+    query.status = status;
+  } else {
+    // Default to pending if no status specified
+    query.status = "pending";
+  }
+
+  // Category filter
+  if (category) {
+    query.category = category;
+  }
+
+  // Search filter
+  if (search) {
+    query.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { bio: { $regex: search, $options: "i" } },
+      { skills: { $in: [new RegExp(search, "i")] } },
+    ];
+  }
+
+  // Pagination
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const limitNum = parseInt(limit);
+  const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
+
+  const pendingArtists = await PendingArtist.find(query)
     .select("-password")
-    .populate("category", "name description");
+    .populate("category", "name description")
+    .skip(skip)
+    .limit(limitNum)
+    .sort(sort);
+
+  const total = await PendingArtist.countDocuments(query);
+
+  const response = formatPaginationResponse(pendingArtists, total, page, limit);
 
   res.json({
     success: true,
-    message: "Pending artists retrieved successfully",
-    data: pendingArtists,
+    data: response.data,
+    pagination: response.pagination,
   });
 });
 
 /**
  * Approve artist (admin only)
  * @route PUT /api/artists/approve/:id
+ * Moves artist from PendingArtist to User + Artist collections
  */
 export const approveArtist = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const artist = await Artist.findById(id).select("-password");
-  if (!artist) {
-    throw new NotFoundError("Artist not found");
+  // Find pending artist
+  const pendingArtist = await PendingArtist.findById(id)
+    .select("+password")
+    .populate("category");
+  
+  if (!pendingArtist) {
+    throw new NotFoundError("Pending artist");
   }
 
-  if (artist.isApproved) {
+  if (pendingArtist.status === "approved") {
     return res.json({
       success: true,
       message: "Artist is already approved",
-      data: artist,
+      data: pendingArtist,
     });
   }
 
-  artist.isApproved = true;
-  artist.isActive = true;
-  await artist.save();
+  // Check if user already exists in Users collection
+  const existingUser = await User.findOne({
+    email: pendingArtist.email,
+  });
+  if (existingUser) {
+    throw new ConflictError("User with this email already exists");
+  }
+
+  // Step 1: Create user in Users collection
+  // Create with temporary password, then update with actual hashed password
+  const user = await User.create({
+    name: pendingArtist.name,
+    email: pendingArtist.email,
+    phone: pendingArtist.phone,
+    password: "temp123", // Temporary password (will be replaced)
+    role: "artist",
+    category: pendingArtist.category._id,
+    isApproved: true,
+    isActive: true,
+  });
+
+  // Update password directly to bypass pre-save hook (password is already hashed)
+  await User.updateOne(
+    { _id: user._id },
+    { $set: { password: pendingArtist.password } }
+  );
+
+  // Step 2: Create Artist profile
+  const artist = await Artist.create({
+    userId: user._id,
+    bio: pendingArtist.bio,
+    profileImage: pendingArtist.profileImage,
+    category: pendingArtist.category._id,
+    skills: pendingArtist.skills,
+    hourlyRate: pendingArtist.hourlyRate,
+    availability: pendingArtist.availability,
+    isApproved: true,
+    isActive: true,
+  });
+
+  // Step 3: Link User to Artist profile
+  user.profileRef = artist._id;
+  user.profileType = "Artist";
+  await user.save();
+
+  // Step 4: Update pending artist status and delete
+  pendingArtist.status = "approved";
+  await pendingArtist.save();
+  await PendingArtist.findByIdAndDelete(id);
+
+  // Populate artist with category for response
+  const populatedArtist = await Artist.findById(artist._id)
+    .populate("category", "name description image")
+    .select("-password");
 
   res.json({
     success: true,
     message: "Artist approved successfully",
-    data: artist,
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isApproved: user.isApproved,
+      },
+      artist: populatedArtist,
+    },
   });
 });
 
 /**
  * Reject artist (admin only)
  * @route DELETE /api/artists/reject/:id
+ * Removes pending artist from PendingArtist collection
  */
 export const rejectArtist = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const artist = await Artist.findById(id);
-  if (!artist) {
-    throw new NotFoundError("Artist not found");
+  const pendingArtist = await PendingArtist.findById(id);
+  if (!pendingArtist) {
+    throw new NotFoundError("Pending artist");
   }
 
-  await artist.deleteOne();
+  // Update status to rejected before deleting
+  pendingArtist.status = "rejected";
+  await pendingArtist.save();
+  
+  // Delete the pending artist
+  await PendingArtist.findByIdAndDelete(id);
 
   res.json({
     success: true,

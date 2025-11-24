@@ -7,7 +7,6 @@ import Customer from "../models/Customer.js";
 import Artist from "../models/Artist.js";
 import Admin from "../models/Admin.js";
 import CategoryUser from "../models/CategoryUser.js";
-import PendingCustomer from "../models/PendingCustomer.js";
 import PendingArtist from "../models/PendingArtist.js";
 import { BadRequestError, UnauthorizedError } from "../utils/errors.js";
 import { asyncHandler } from "../middleware/authMiddleware.js";

@@ -9,7 +9,6 @@ import {
   getBookings,
   acceptBooking,
   rejectBooking,
-  checkAvailability,
   getReviews,
 } from "../controllers/artistController.js";
 import { verifyToken, checkApproval } from "../middleware/authMiddleware.js";
@@ -27,7 +26,6 @@ router.put("/profile", updateProfile);
 router.get("/bookings", getBookings);
 router.put("/bookings/:bookingId/accept", acceptBooking);
 router.put("/bookings/:bookingId/reject", rejectBooking);
-router.get("/availability", checkAvailability);
 router.get("/reviews", getReviews);
 
 export default router;
