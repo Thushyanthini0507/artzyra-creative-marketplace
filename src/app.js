@@ -43,6 +43,15 @@ app.get("/", (req, res) => {
   });
 });
 
+// Debug route to test API routing
+app.get("/api/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "API routes are working",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // API Routes (Entity-based architecture)
 app.use("/api/auth", authRoutes); // Authentication: register, login, me, logout
 app.use("/api/admin", adminRoutes); // Admin operations

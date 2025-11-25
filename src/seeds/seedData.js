@@ -55,7 +55,7 @@ const seedData = async () => {
           "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=400",
         isActive: true,
       },
-      
+
       {
         name: "Musician",
         description: "Talented musicians for live performances",

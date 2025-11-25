@@ -11,10 +11,26 @@ import { authRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
-// Public routes
+// Public routes - Registration and Login
+// Note: Order matters - more specific routes should come first
 router.post("/register/customer", authRateLimiter, registerCustomer);
 router.post("/register/artist", authRateLimiter, registerArtist);
 router.post("/login", authRateLimiter, login);
+
+// Debug route to verify routing works
+router.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Auth routes are working",
+    availableRoutes: [
+      "POST /api/auth/register/customer",
+      "POST /api/auth/register/artist",
+      "POST /api/auth/login",
+      "GET /api/auth/me",
+      "POST /api/auth/logout"
+    ]
+  });
+});
 
 const authenticatedRoles = ["admin", "artist", "customer"];
 
