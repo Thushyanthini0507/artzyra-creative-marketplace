@@ -75,15 +75,6 @@ export const login = asyncHandler(async (req, res) => {
     throw new UnauthorizedError("Invalid email or password");
   }
 
-  // Check if user is approved
-  // Customers and admins are auto-approved and get instant access
-  // Other roles (Artist, CategoryUser, etc.) require admin approval
-  if (user.role !== "admin" && user.role !== "customer" && !user.isApproved) {
-    throw new UnauthorizedError(
-      "Your account is pending approval. Please wait for admin approval before logging in."
-    );
-  }
-
   // Check if user is active
   if (user.isActive === false) {
     throw new UnauthorizedError(
@@ -93,16 +84,34 @@ export const login = asyncHandler(async (req, res) => {
 
   // Get profile data from role-specific collection
   let profile = null;
-  if (user.profileType === "Customer") {
+  if (user.role === "customer") {
     profile = await Customer.findOne({ userId: user._id });
-  } else if (user.profileType === "Artist") {
+  } else if (user.role === "artist") {
     profile = await Artist.findOne({ userId: user._id })
       .populate("category", "name description");
-  } else if (user.profileType === "Admin") {
+  } else if (user.role === "admin") {
     profile = await Admin.findOne({ userId: user._id });
   } else if (user.profileType === "CategoryUser") {
     profile = await CategoryUser.findOne({ userId: user._id })
       .populate("category", "name description");
+  }
+
+  // Check if user is approved
+  // Customers and admins are auto-approved and get instant access
+  // Artists require admin approval - check Artist profile status
+  if (user.role === "artist") {
+    if (!profile || profile.status !== "approved") {
+      throw new UnauthorizedError(
+        "Your account is pending approval. Please wait for admin approval before logging in."
+      );
+    }
+  } else if (user.role !== "admin" && user.role !== "customer") {
+    // For other roles (CategoryUser, etc.), check if they have a profile
+    if (!profile) {
+      throw new UnauthorizedError(
+        "Your account is pending approval. Please wait for admin approval before logging in."
+      );
+    }
   }
 
   // Generate token using user ID from Users collection
@@ -127,20 +136,31 @@ export const login = asyncHandler(async (req, res) => {
       redirectPath = "/";
   }
 
+  // Build user response object
+  const userResponse = {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+  };
+
+  // Add profile-specific fields
+  if (profile) {
+    if (user.role === "artist") {
+      userResponse.name = profile.name;
+      userResponse.isApproved = profile.status === "approved";
+      userResponse.status = profile.status;
+    } else if (user.role === "customer") {
+      userResponse.name = profile.name;
+      userResponse.isApproved = true; // Customers are auto-approved
+    }
+  }
+
   res.json({
     success: true,
     message: "Login successful",
     data: {
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        isApproved: user.isApproved,
-        isActive: user.isActive,
-        category: user.category,
-      },
+      user: userResponse,
       profile,
       token,
       redirectPath, // Role-based redirection path for frontend
