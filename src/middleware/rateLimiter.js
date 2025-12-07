@@ -33,11 +33,18 @@ const buildMessage = (message) => ({
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
-  message: buildMessage(
-    "Too many login attempts. Please try again after 15 minutes."
-  ),
+  message: {
+    success: false,
+    message: "Too many login attempts. Please try again after 15 minutes.",
+  },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: "Too many login attempts. Please try again after 15 minutes.",
+    });
+  },
 });
 
 /**
@@ -47,11 +54,18 @@ export const authRateLimiter = rateLimit({
 export const paymentRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20,
-  message: buildMessage(
-    "Too many payment requests. Please wait a few minutes and try again."
-  ),
+  message: {
+    success: false,
+    message: "Too many payment requests. Please wait a few minutes and try again.",
+  },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: "Too many payment requests. Please wait a few minutes and try again.",
+    });
+  },
 });
 
 /**
@@ -61,11 +75,18 @@ export const paymentRateLimiter = rateLimit({
 export const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200,
-  message: buildMessage(
-    "Too many requests from this IP. Please try again later."
-  ),
+  message: {
+    success: false,
+    message: "Too many requests from this IP. Please try again later.",
+  },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: "Too many requests from this IP. Please try again later.",
+    });
+  },
 });
 
 export default {
