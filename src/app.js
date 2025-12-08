@@ -16,6 +16,7 @@ import categoriesRoutes from "./routes/catergoryRoutes.js";
 import paymentsRoutes from "./routes/paymentRoutes.js";
 import reviewsRoutes from "./routes/reviewRoutes.js";
 import notificationsRoutes from "./routes/notificationRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
 
 const app = express();
 
@@ -76,6 +77,7 @@ app.use("/api/categories", categoriesRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/reviews", reviewsRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/upload", uploadRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
