@@ -48,10 +48,16 @@ export const uploadImage = asyncHandler(async (req, res) => {
   }
 
   try {
+    console.log(`Starting Cloudinary upload for ${imageType}...`);
+    const startTime = Date.now();
+    
     // Upload to Cloudinary with folder organization
     const result = await uploadToCloudinary(req.file.buffer, imageType, {
       mimeType: req.file.mimetype,
     });
+
+    const duration = Date.now() - startTime;
+    console.log(`Cloudinary upload completed in ${duration}ms`);
 
     res.json({
       success: true,

@@ -74,6 +74,8 @@ export const uploadToCloudinary = async (file, imageType = "category", options =
 
     let uploadResult;
 
+    console.log(`Cloudinary upload initiated for ${imageType} (Size: ${file.length || file.byteLength} bytes)`);
+    
     // Handle different file input types
     if (Buffer.isBuffer(file)) {
       // Convert buffer to base64 data URI
@@ -94,6 +96,8 @@ export const uploadToCloudinary = async (file, imageType = "category", options =
     } else {
       throw new Error("Invalid file format. Expected Buffer or base64 string.");
     }
+
+    console.log(`Cloudinary upload successful: ${uploadResult.public_id}`);
 
     return {
       success: true,

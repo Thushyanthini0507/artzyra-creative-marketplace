@@ -95,6 +95,7 @@ if (process.env.VERCEL !== "1") {
   app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+    console.log("Backend restarted with CORRECT configuration (Cloud Name: dvmqpz0fp)");
   });
 }
 
