@@ -21,9 +21,11 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 const app = express();
 
 // CORS configuration - supports both localhost and production
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
-  : ["http://localhost:3000"];
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://artzyra-client.vercel.app/",
+];
 
 app.use(
   cors({
