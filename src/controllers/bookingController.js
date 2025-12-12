@@ -1,6 +1,7 @@
 import Booking from "../models/Booking.js";
 import Chat from "../models/Chat.js";
 import Notification from "../models/Notification.js";
+import Artist from "../models/Artist.js";
 import { createNotification } from "../utils/helpers.js";
 import { asyncHandler } from "../middleware/authMiddleware.js";
 import {
@@ -32,7 +33,8 @@ export const createBooking = asyncHandler(async (req, res) => {
     !startTime ||
     !duration ||
     !location ||
-    !totalAmount
+    totalAmount === undefined ||
+    totalAmount === null
   ) {
     throw new BadRequestError("Please provide all required fields");
   }
@@ -56,10 +58,18 @@ export const createBooking = asyncHandler(async (req, res) => {
     paymentStatus: "pending",
   });
 
+  // Find artist profile for notification
+  // artistId is the User ID, so we look up the Artist profile by userId
+  const artistProfile = await Artist.findOne({ userId: artistId });
+  
   // Create notification for artist
+  // Use artistProfile._id if found, otherwise fall back to artistId (though it might be wrong if it's userId)
+  // Notification model expects Artist Profile ID when userModel is "Artist"
+  const notificationTargetId = artistProfile ? artistProfile._id : artistId;
+
   await createNotification(
     Notification,
-    artistId,
+    notificationTargetId,
     "Artist",
     "new_booking",
     "New Booking Request",
