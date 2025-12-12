@@ -4,6 +4,7 @@
  */
 import Payment from "../models/Payment.js";
 import Booking from "../models/Booking.js";
+import Chat from "../models/Chat.js";
 import {
   processPayment,
   refundPayment,
@@ -82,11 +83,27 @@ export const createPayment = asyncHandler(async (req, res) => {
     paymentDate: new Date(),
   });
 
-  // Update booking payment status
+  // Update booking status to confirmed
+  booking.status = "confirmed";
   booking.paymentStatus =
     paymentResult.status === "completed" ? "paid" : "pending";
   booking.payment = payment._id;
   await booking.save();
+
+  // Create or Find Chat
+  let chat = await Chat.findOne({
+    booking: booking._id,
+  });
+
+  if (!chat) {
+    chat = await Chat.create({
+      participants: [booking.customer._id, booking.artist._id],
+      booking: booking._id,
+      messages: [],
+      lastMessage: "Booking confirmed! You can now chat.",
+      lastMessageTimestamp: new Date(),
+    });
+  }
 
   // Create notification for artist
   await createNotification(
@@ -98,6 +115,29 @@ export const createPayment = asyncHandler(async (req, res) => {
     `Payment received for booking. Amount: $${booking.totalAmount}`,
     payment._id,
     "Payment"
+  );
+  
+  await createNotification(
+    Notification,
+    booking.artist._id,
+    "Artist",
+    "booking_confirmed",
+    "Booking Confirmed",
+    `New booking confirmed with ${booking.customer.name}`,
+    booking._id,
+    "Booking"
+  );
+
+  // Create notification for customer
+  await createNotification(
+    Notification,
+    booking.customer._id,
+    "Customer",
+    "booking_confirmed",
+    "Booking Confirmed",
+    `Your booking with ${booking.artist.name} is confirmed!`,
+    booking._id,
+    "Booking"
   );
 
   const populatedPayment = await Payment.findById(payment._id)
