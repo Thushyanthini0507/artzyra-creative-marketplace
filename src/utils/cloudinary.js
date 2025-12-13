@@ -2,7 +2,14 @@
  * Cloudinary Utility
  * Handles image uploads to Cloudinary with folder organization
  */
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { v2 as cloudinary } from "cloudinary";
+
+// Ensure dotenv loads from the correct path regardless of working directory
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 // Configure Cloudinary
 const cloudinaryConfig = {
