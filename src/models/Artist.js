@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Category from "./Category.js";
+import { isValidSriLankanPhone } from "../utils/phoneValidation.js";
 
 const artistSchema = new mongoose.Schema(
   {
@@ -20,9 +21,6 @@ const artistSchema = new mongoose.Schema(
       validate: {
         validator: function (v) {
           if (!v) return true; // Allow empty (optional field)
-          const {
-            isValidSriLankanPhone,
-          } = require("../utils/phoneValidation.js");
           return isValidSriLankanPhone(v);
         },
         message:

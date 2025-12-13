@@ -24,6 +24,7 @@ export const asyncHandler = (fn) => {
  * Verifies JWT token and loads user based on role
  */
 export const verifyToken = asyncHandler(async (req, res, next) => {
+  console.log("verifyToken called. Headers:", req.headers.authorization);
   let token;
 
   // Priority 1: Extract token from cookie (preferred for security)
@@ -70,8 +71,15 @@ export const verifyToken = asyncHandler(async (req, res, next) => {
     if (user.role === "customer") {
       profile = await Customer.findOne({ userId: user._id });
     } else if (user.role === "artist") {
-      profile = await Artist.findOne({ userId: user._id })
-        .populate("category", "name description");
+      console.log("Fetching artist profile for user:", user._id);
+      try {
+        profile = await Artist.findOne({ userId: user._id })
+          .populate("category", "name description");
+        console.log("Artist profile fetched:", profile ? profile._id : "null");
+      } catch (err) {
+        console.error("Error fetching artist profile in verifyToken:", err);
+        throw err;
+      }
     } else if (user.role === "admin") {
       // Use findOneAndUpdate with upsert to atomically create Admin profile if it doesn't exist
       // This prevents race conditions when multiple requests try to create the profile simultaneously
@@ -166,6 +174,7 @@ export const authOptional = asyncHandler(async (req, res, next) => {
  * For artists, checks if status is "approved"
  */
 export const checkApproval = asyncHandler(async (req, res, next) => {
+  console.log("checkApproval called for role:", req.userRole);
   if (!req.user) {
     throw new UnauthorizedError("Not authorized. Please log in.");
   }
@@ -177,18 +186,26 @@ export const checkApproval = asyncHandler(async (req, res, next) => {
 
   // For artists, check if status is "approved"
   if (req.userRole === "artist") {
-    const artist = await Artist.findOne({ userId: req.userId });
-    if (!artist) {
-      throw new ForbiddenError(
-        "Your account is pending approval. Please wait for admin approval."
-      );
-    }
-    // Check status (case-insensitive and handle different status values)
-    const artistStatus = String(artist.status || "").toLowerCase().trim();
-    if (artistStatus !== "approved") {
-      throw new ForbiddenError(
-        `Your account is pending approval. Current status: ${artist.status || "pending"}. Please wait for admin approval.`
-      );
+    console.log("Checking approval for artist:", req.userId);
+    try {
+      const artist = await Artist.findOne({ userId: req.userId });
+      if (!artist) {
+        console.log("Artist profile not found in checkApproval");
+        throw new ForbiddenError(
+          "Your account is pending approval. Please wait for admin approval."
+        );
+      }
+      // Check status (case-insensitive and handle different status values)
+      const artistStatus = String(artist.status || "").toLowerCase().trim();
+      console.log("Artist status:", artistStatus);
+      if (artistStatus !== "approved") {
+        throw new ForbiddenError(
+          `Your account is pending approval. Current status: ${artist.status || "pending"}. Please wait for admin approval.`
+        );
+      }
+    } catch (err) {
+      console.error("Error in checkApproval:", err);
+      throw err;
     }
   }
 

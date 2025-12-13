@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { isValidSriLankanPhone } from "../utils/phoneValidation.js";
 
 const pendingCustomerSchema = new mongoose.Schema(
   {
@@ -21,7 +22,6 @@ const pendingCustomerSchema = new mongoose.Schema(
       validate: {
         validator: function(v) {
           if (!v) return true; // Allow empty (optional field)
-          const { isValidSriLankanPhone } = require("../utils/phoneValidation.js");
           return isValidSriLankanPhone(v);
         },
         message: "Please provide a valid Sri Lankan phone number (e.g., 0712345678 or 712345678)"

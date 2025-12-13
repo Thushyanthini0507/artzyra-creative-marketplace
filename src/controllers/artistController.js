@@ -136,6 +136,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
  * Same filtering logic as customer bookings but filtered by artist ID instead of customer ID
  */
 export const getBookings = asyncHandler(async (req, res) => {
+  console.log("getBookings called");
   const {
     search,
     status,
@@ -152,70 +153,87 @@ export const getBookings = asyncHandler(async (req, res) => {
   } = req.query;
 
   try {
+    console.log("Finding artist profile for userId:", req.userId);
     // Find artist profile to get the artist ID
     const artistProfile = await Artist.findOne({ userId: req.userId });
     if (!artistProfile) {
+      console.log("Artist profile not found for userId:", req.userId);
       throw new NotFoundError("Artist");
     }
+    console.log("Artist profile found:", artistProfile._id);
 
     // Base query - only get bookings for this artist (use User ID as per Booking schema)
     const query = { artist: req.userId };
+    console.log("Initial query:", query);
 
     // STATUS FILTERS
-    if (status) {
+    if (status && status !== 'undefined' && status !== 'null') {
       query.status = status;
     }
-    if (paymentStatus) {
+    if (paymentStatus && paymentStatus !== 'undefined' && paymentStatus !== 'null') {
       query.paymentStatus = paymentStatus;
     }
-    // Category filter removed as Booking model does not have category
 
     // DATE RANGE FILTER
     if (startDate || endDate) {
       query.bookingDate = {};
-      if (startDate) {
+      if (startDate && !isNaN(new Date(startDate).getTime())) {
         query.bookingDate.$gte = new Date(startDate);
       }
-      if (endDate) {
+      if (endDate && !isNaN(new Date(endDate).getTime())) {
         query.bookingDate.$lte = new Date(endDate);
+      }
+      // If object is empty, delete it
+      if (Object.keys(query.bookingDate).length === 0) {
+        delete query.bookingDate;
       }
     }
 
     // AMOUNT RANGE FILTER
     if (minAmount || maxAmount) {
       query.totalAmount = {};
-      if (minAmount) {
+      if (minAmount && !isNaN(parseFloat(minAmount))) {
         query.totalAmount.$gte = parseFloat(minAmount);
       }
-      if (maxAmount) {
+      if (maxAmount && !isNaN(parseFloat(maxAmount))) {
         query.totalAmount.$lte = parseFloat(maxAmount);
+      }
+      if (Object.keys(query.totalAmount).length === 0) {
+        delete query.totalAmount;
       }
     }
 
     // SEARCH FILTER
-    if (search) {
+    if (search && search.trim() !== '') {
       query.$or = [
         { location: { $regex: search, $options: "i" } },
         { specialRequests: { $regex: search, $options: "i" } },
       ];
     }
 
+    console.log("Final query:", JSON.stringify(query));
+
     // PAGINATION AND SORTING
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const limitNum = parseInt(limit);
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+    const skip = (pageNum - 1) * limitNum;
     const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
 
+    console.log("Executing Booking.find with sort:", sort, "skip:", skip, "limit:", limitNum);
+
     // Note: Customer populate will only return email as User model doesn't have name/profileImage
-    // TODO: Implement proper customer profile fetching
     const bookings = await Booking.find(query)
       .populate("customer", "email")
       .skip(skip)
       .limit(limitNum)
       .sort(sort);
 
-    const total = await Booking.countDocuments(query);
+    console.log("Bookings found:", bookings.length);
 
-    const response = formatPaginationResponse(bookings, total, page, limit);
+    const total = await Booking.countDocuments(query);
+    console.log("Total documents:", total);
+
+    const response = formatPaginationResponse(bookings, total, pageNum, limitNum);
 
     res.json({
       success: true,
@@ -224,11 +242,21 @@ export const getBookings = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error("Error in getBookings:", error);
+    
+    // If it's a known AppError, use its status code
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        error: error.message
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Error fetching bookings",
       error: error.message,
-      stack: error.stack
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
