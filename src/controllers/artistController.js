@@ -718,7 +718,7 @@ export const approveArtist = asyncHandler(async (req, res) => {
         });
       } catch (error) {
         if (error.name === "ValidationError") {
-          const validationErrors = Object.values(error.errors).map((e: any) => e.message).join(", ");
+          const validationErrors = Object.values(error.errors).map((e) => e.message).join(", ");
           throw new BadRequestError(`Validation failed: ${validationErrors}`);
         }
         throw error;
@@ -783,7 +783,7 @@ export const approveArtist = asyncHandler(async (req, res) => {
         });
       } catch (error) {
         if (error.name === "ValidationError") {
-          const validationErrors = Object.values(error.errors).map((e: any) => e.message).join(", ");
+          const validationErrors = Object.values(error.errors).map((e) => e.message).join(", ");
           throw new BadRequestError(`Validation failed: ${validationErrors}`);
         }
         throw error;
