@@ -50,7 +50,7 @@ export const createPayment = asyncHandler(async (req, res) => {
 
   // Validate booking has required data
   if (!booking.totalAmount || booking.totalAmount <= 0) {
-    console.error("❌ Booking missing totalAmount:", {
+    console.error("Booking missing totalAmount:", {
       bookingId: booking._id,
       totalAmount: booking.totalAmount,
       service: booking.service,
@@ -73,7 +73,7 @@ export const createPayment = asyncHandler(async (req, res) => {
     );
   }
 
-  console.log("💳 Creating payment for booking:", {
+  console.log("Creating payment for booking:", {
     bookingId: booking._id,
     customerId: booking.customer._id,
     artistId: booking.artist._id,
@@ -91,7 +91,7 @@ export const createPayment = asyncHandler(async (req, res) => {
   });
 
   if (!paymentResult.success) {
-    console.error("❌ Payment processing failed:", paymentResult);
+    console.error("Payment processing failed:", paymentResult);
     throw new BadRequestError(
       `Payment processing failed: ${paymentResult.error}${paymentResult.errorCode ? ' (Code: ' + paymentResult.errorCode + ')' : ''}`
     );
@@ -101,7 +101,7 @@ export const createPayment = asyncHandler(async (req, res) => {
   // The actual payment confirmation will happen via verifyPaymentIntent endpoint
   // We check for null, undefined, or empty string
   if (!paymentMethod || paymentMethod === "") {
-    console.log("ℹ️ No payment method provided, returning client secret only");
+    console.log("No payment method provided, returning client secret only");
     return res.status(200).json({
       success: true,
       message: "Payment intent created successfully",
@@ -438,7 +438,7 @@ export const verifyPaymentIntent = asyncHandler(async (req, res) => {
   });
 
   if (!paymentIntentId) {
-    console.error("❌ Missing payment intent ID in request body");
+    console.error("Missing payment intent ID in request body");
     throw new BadRequestError("Payment Intent ID is required");
   }
 
@@ -447,12 +447,12 @@ export const verifyPaymentIntent = asyncHandler(async (req, res) => {
   const verification = await verifyPayment(paymentIntentId);
 
   if (!verification.success) {
-    console.error("❌ Stripe verification failed:", verification.error);
+    console.error("Stripe verification failed:", verification.error);
     throw new BadRequestError(`Payment verification failed: ${verification.error}`);
   }
 
   const paymentIntent = verification.data;
-  console.log("✅ Stripe verification successful:", {
+  console.log("Stripe verification successful:", {
     status: paymentIntent.status,
     amount: paymentIntent.amount,
     currency: paymentIntent.currency,
@@ -472,16 +472,16 @@ export const verifyPaymentIntent = asyncHandler(async (req, res) => {
   let bookingId = paymentIntent.metadata.bookingId;
   
   if (!bookingId) {
-    console.warn("⚠️ Booking ID missing in payment metadata. Attempting fallback lookup...");
+    console.warn("Booking ID missing in payment metadata. Attempting fallback lookup...");
     
     // Fallback: Try to find payment record by stripePaymentIntentId
     const existingPayment = await Payment.findOne({ stripePaymentIntentId: paymentIntentId });
     
     if (existingPayment && existingPayment.booking) {
       bookingId = existingPayment.booking;
-      console.log("✅ Found booking ID from local payment record:", bookingId);
+      console.log("Found booking ID from local payment record:", bookingId);
     } else {
-      console.error("❌ Could not find booking ID for payment intent:", paymentIntentId);
+      console.error("Could not find booking ID for payment intent:", paymentIntentId);
       throw new BadRequestError("Booking ID missing in payment metadata and could not be recovered");
     }
   }
@@ -525,9 +525,9 @@ export const verifyPaymentIntent = asyncHandler(async (req, res) => {
         status: "succeeded",
         paymentDate: new Date(),
       });
-      console.log("✅ Payment record created:", payment._id);
+      console.log("Payment record created:", payment._id);
     } catch (error) {
-      console.error("❌ Error creating payment record:", error);
+      console.error("Error creating payment record:", error);
       throw error;
     }
   } else {

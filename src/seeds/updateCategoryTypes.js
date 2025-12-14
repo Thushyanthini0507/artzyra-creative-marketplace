@@ -124,3 +124,4 @@ const updateCategoryTypes = async () => {
 updateCategoryTypes();
 
 
+

@@ -7,11 +7,11 @@ let stripeInstance;
 const getStripe = () => {
   if (!stripeInstance) {
     if (!process.env.STRIPE_SECRET_KEY) {
-      console.error("❌ STRIPE_SECRET_KEY is not configured in environment variables");
+      console.error("STRIPE_SECRET_KEY is not configured in environment variables");
       console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes('STRIPE')));
       throw new Error("STRIPE_SECRET_KEY is missing in environment variables. Please configure it in Vercel.");
     }
-    console.log("✅ Stripe initialized with key:", process.env.STRIPE_SECRET_KEY.substring(0, 7) + '...');
+    console.log("Stripe initialized with key:", process.env.STRIPE_SECRET_KEY.substring(0, 7) + '...');
     stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
   }
   return stripeInstance;
