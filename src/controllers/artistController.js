@@ -238,19 +238,48 @@ export const getBookings = asyncHandler(async (req, res) => {
 
     console.log("Executing Booking.find with sort:", sort, "skip:", skip, "limit:", limitNum);
 
-    // Note: Customer populate will only return email as User model doesn't have name/profileImage
+    // Fetch bookings with customer User data
     const bookings = await Booking.find(query)
       .populate("customer", "email")
       .skip(skip)
       .limit(limitNum)
-      .sort(sort);
+      .sort(sort)
+      .lean(); // Use lean() for better performance
 
     console.log("Bookings found:", bookings.length);
+
+    // Fetch Customer profiles for all customer IDs to get names
+    const customerUserIds = bookings.map(b => b.customer?._id || b.customer).filter(Boolean);
+    const customerProfiles = await Customer.find({ userId: { $in: customerUserIds } })
+      .select("userId name profileImage email")
+      .lean();
+
+    // Create a map of userId -> customer profile for quick lookup
+    const customerMap = new Map();
+    customerProfiles.forEach(profile => {
+      customerMap.set(profile.userId.toString(), profile);
+    });
+
+    // Merge customer profile data into bookings
+    const bookingsWithCustomerData = bookings.map(booking => {
+      const customerUserId = booking.customer?._id || booking.customer;
+      const customerProfile = customerUserId ? customerMap.get(customerUserId.toString()) : null;
+      
+      return {
+        ...booking,
+        customer: {
+          _id: customerUserId,
+          email: booking.customer?.email || customerProfile?.email || "",
+          name: customerProfile?.name || booking.customer?.name || "N/A",
+          profileImage: customerProfile?.profileImage || booking.customer?.profileImage || "",
+        }
+      };
+    });
 
     const total = await Booking.countDocuments(query);
     console.log("Total documents:", total);
 
-    const response = formatPaginationResponse(bookings, total, pageNum, limitNum);
+    const response = formatPaginationResponse(bookingsWithCustomerData, total, pageNum, limitNum);
 
     res.json({
       success: true,
