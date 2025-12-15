@@ -275,15 +275,52 @@ export const getAllBookings = asyncHandler(async (req, res) => {
   const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
 
   const bookings = await Booking.find(query)
-    .populate("customer", "name email profileImage")
-    .populate("artist", "name email profileImage")
+    .populate("customer", "email")
+    .populate("artist", "email")
     .skip(skip)
     .limit(limitNum)
     .sort(sort);
 
+  // Get all unique customer and artist user IDs
+  const customerIds = [...new Set(bookings.map(b => b.customer?._id?.toString()).filter(Boolean))];
+  const artistIds = [...new Set(bookings.map(b => b.artist?._id?.toString()).filter(Boolean))];
+
+  // Fetch Customer and Artist profiles in parallel
+  const [customers, artists] = await Promise.all([
+    Customer.find({ userId: { $in: customerIds } }).select("userId name profileImage"),
+    Artist.find({ userId: { $in: artistIds } }).select("userId name profileImage"),
+  ]);
+
+  // Create maps for quick lookup
+  const customerMap = new Map(customers.map(c => [c.userId.toString(), c]));
+  const artistMap = new Map(artists.map(a => [a.userId.toString(), a]));
+
+  // Enrich bookings with customer and artist names
+  const enrichedBookings = bookings.map(booking => {
+    const customerUserId = booking.customer?._id?.toString();
+    const artistUserId = booking.artist?._id?.toString();
+    
+    const customerProfile = customerUserId ? customerMap.get(customerUserId) : null;
+    const artistProfile = artistUserId ? artistMap.get(artistUserId) : null;
+
+    return {
+      ...booking.toObject(),
+      customer: {
+        ...booking.customer?.toObject(),
+        name: customerProfile?.name || booking.customer?.name || booking.customer?.email?.split('@')[0] || "Unknown",
+        profileImage: customerProfile?.profileImage || booking.customer?.profileImage || "",
+      },
+      artist: {
+        ...booking.artist?.toObject(),
+        name: artistProfile?.name || booking.artist?.name || booking.artist?.email?.split('@')[0] || "Unknown",
+        profileImage: artistProfile?.profileImage || booking.artist?.profileImage || "",
+      },
+    };
+  });
+
   const total = await Booking.countDocuments(query);
 
-  const response = formatPaginationResponse(bookings, total, page, limit);
+  const response = formatPaginationResponse(enrichedBookings, total, page, limit);
 
   res.json({
     success: true,
