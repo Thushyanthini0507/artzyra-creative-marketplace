@@ -33,7 +33,7 @@ const seedDatabase = async () => {
 
     console.log("Connecting to MongoDB...");
     await connectDB();
-    console.log("✓ MongoDB connected successfully\n");
+    console.log("MongoDB connected successfully\n");
 
     // Seed admin - New architecture: Create User first, then Admin profile
     let adminUser = await User.findOne({
@@ -65,11 +65,11 @@ const seedDatabase = async () => {
       adminUser.profileType = "Admin";
       await adminUser.save();
 
-      console.log(`✓ Admin seeded: ${adminUser.email}`);
+      console.log(`Admin seeded: ${adminUser.email}`);
     } else {
       // Admin user exists, fetch the profile
       admin = await Admin.findOne({ userId: adminUser._id });
-      console.log(`ℹAdmin already exists: ${adminUser.email}`);
+      console.log(`Admin already exists: ${adminUser.email}`);
     }
 
     console.log("\nPlatform seed completed successfully!");

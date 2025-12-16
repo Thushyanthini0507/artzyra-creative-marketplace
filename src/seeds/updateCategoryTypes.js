@@ -39,12 +39,12 @@ const physicalCategories = [
 
 const updateCategoryTypes = async () => {
   try {
-    console.log("🔄 Starting category type update...\n");
+    console.log("Starting category type update...\n");
 
     // Connect to database
     console.log("Connecting to MongoDB...");
     await connectDB();
-    console.log("✓ MongoDB connected successfully\n");
+    console.log("MongoDB connected successfully\n");
 
     // Get all categories
     const allCategories = await Category.find({});
@@ -87,7 +87,7 @@ const updateCategoryTypes = async () => {
           { new: true, runValidators: true }
         );
 
-        console.log(`✓ Updated: ${category.name} → type: ${categoryType}`);
+        console.log(`Updated: ${category.name} → type: ${categoryType}`);
         updated++;
       } catch (error) {
         console.error(`✗ Error updating ${category.name}:`, error.message);
@@ -95,8 +95,8 @@ const updateCategoryTypes = async () => {
       }
     }
 
-    console.log(`\n✅ Category type update completed!`);
-    console.log(`\n📊 Summary:`);
+    console.log(`\nCategory type update completed!`);
+    console.log(`\nSummary:`);
     console.log(`   - ${updated} categories updated`);
     console.log(`   - ${skipped} categories skipped (already have type)`);
     console.log(`   - ${errors} errors`);
@@ -104,15 +104,15 @@ const updateCategoryTypes = async () => {
 
     // Display all categories with their types
     const allCategoriesWithTypes = await Category.find({}).sort("name");
-    console.log(`\n📋 All Categories with Types:`);
+    console.log(`\nAll Categories with Types:`);
     allCategoriesWithTypes.forEach((cat, index) => {
-      const typeDisplay = cat.type || "❌ MISSING";
+      const typeDisplay = cat.type || "MISSING";
       console.log(`   ${index + 1}. ${cat.name} - ${typeDisplay}`);
     });
 
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error updating category types:", error);
+    console.error("Error updating category types:", error);
     process.exit(1);
   } finally {
     await mongoose.connection.close();
@@ -122,6 +122,8 @@ const updateCategoryTypes = async () => {
 
 // Run the update function
 updateCategoryTypes();
+
+
 
 
 

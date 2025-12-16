@@ -105,13 +105,13 @@ export const login = asyncHandler(async (req, res) => {
         "Your account is pending approval. Please wait for admin approval before logging in."
       );
     }
-  } else if (user.role !== "admin" && user.role !== "customer") {
-    // For other roles (CategoryUser, etc.), check if they have a profile
-    if (!profile) {
-      throw new UnauthorizedError(
-        "Your account is pending approval. Please wait for admin approval before logging in."
-      );
-    }
+  // } else if (user.role !== "admin" && user.role !== "customer") {
+  //   // For other roles (CategoryUser, etc.), check if they have a profile
+  //   if (!profile) {
+  //     throw new UnauthorizedError(
+  //       "Your account is pending approval. Please wait for admin approval before logging in."
+  //     );
+  //   }
   }
 
   // Generate token using user ID from Users collection

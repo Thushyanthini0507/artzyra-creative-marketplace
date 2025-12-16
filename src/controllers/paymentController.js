@@ -29,7 +29,7 @@ import { formatPaginationResponse } from "../utils/paginate.js";
 export const createPayment = asyncHandler(async (req, res) => {
   const { bookingId, paymentMethod } = req.body;
 
-  console.log("💳 Create Payment Request:", {
+  console.log("Create Payment Request:", {
     bookingId,
     hasPaymentMethod: !!paymentMethod,
     paymentMethodType: typeof paymentMethod,

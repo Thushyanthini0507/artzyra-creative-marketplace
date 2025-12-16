@@ -41,7 +41,7 @@ export const processPayment = async (paymentData) => {
       throw new Error("Artist ID is required");
     }
 
-    console.log("💳 Processing payment:", {
+    console.log("Processing payment:", {
       amount,
       currency,
       bookingId,
@@ -80,9 +80,9 @@ export const processPayment = async (paymentData) => {
       paymentIntentData.application_fee_amount = applicationFeeAmount;
     }
 
-    console.log("🔄 Creating Stripe PaymentIntent...");
+    console.log("Creating Stripe PaymentIntent...");
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
-    console.log("✅ PaymentIntent created:", paymentIntent.id);
+    console.log("PaymentIntent created:", paymentIntent.id);
 
     return {
       success: true,
@@ -92,7 +92,7 @@ export const processPayment = async (paymentData) => {
       data: paymentIntent,
     };
   } catch (error) {
-    console.error("❌ Payment processing error:", {
+    console.error("Payment processing error:", {
       message: error.message,
       type: error.type,
       code: error.code,

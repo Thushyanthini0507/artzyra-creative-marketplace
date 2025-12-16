@@ -183,7 +183,7 @@ const seedCategories = async () => {
     // Connect to database
     console.log("Connecting to MongoDB...");
     await connectDB();
-    console.log("✓ MongoDB connected successfully\n");
+    console.log("MongoDB connected successfully\n");
 
     // Clear existing categories (optional - comment out if you want to keep existing)
     // console.log("Clearing existing categories...");
@@ -217,27 +217,27 @@ const seedCategories = async () => {
       } else {
         // Create new category
         await Category.create(categoryData);
-        console.log(`✓ Created: ${categoryData.name}`);
+        console.log(`Created: ${categoryData.name}`);
         created++;
       }
     }
 
-    console.log(`\n✅ Category seeding completed successfully!`);
-    console.log(`\n📊 Summary:`);
+    console.log(`\nCategory seeding completed successfully!`);
+    console.log(`\nSummary:`);
     console.log(`   - ${created} new categories created`);
     console.log(`   - ${skipped} categories updated`);
     console.log(`   - Total: ${categories.length} categories processed`);
 
     // Display all categories
     const allCategories = await Category.find({ isActive: true }).sort("name");
-    console.log(`\n📋 Active Categories (${allCategories.length}):`);
+    console.log(`\nActive Categories (${allCategories.length}):`);
     allCategories.forEach((cat, index) => {
       console.log(`   ${index + 1}. ${cat.name}`);
     });
 
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error seeding categories:", error);
+    console.error("Error seeding categories:", error);
     process.exit(1);
   } finally {
     await mongoose.connection.close();

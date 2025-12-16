@@ -1389,8 +1389,8 @@ const seedData = async () => {
     ]);
     console.log(`Created ${notifications.length} notifications`);
 
-    console.log("\n✅ Database seeding completed successfully!");
-    console.log("\n📊 Summary:");
+    console.log("\nDatabase seeding completed successfully!");
+    console.log("\nSummary:");
     console.log(`   - ${categories.length} Categories`);
     console.log(`   - 1 Admin`);
     console.log(`   - ${customers.length} Customers`);
@@ -1425,15 +1425,15 @@ const seedData = async () => {
       } refunded)`
     );
     console.log(`   - ${notifications.length} Notifications`);
-    console.log("\n🔑 Test Credentials:");
+    console.log("\nTest Credentials:");
     console.log("   Admin: admin@artzyra.com / admin123");
     console.log("   Customer: customer1@example.com / customer123");
     console.log("   Artist: artist1@example.com / artist123");
-    console.log("\n📝 Note: All passwords are hashed using bcrypt");
+    console.log("\nNote: All passwords are hashed using bcrypt");
 
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error seeding database:", error);
+    console.error("Error seeding database:", error);
     process.exit(1);
   }
 };

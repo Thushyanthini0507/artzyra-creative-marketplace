@@ -28,13 +28,13 @@ const isCloudinaryConfigured = () => {
 cloudinary.config(cloudinaryConfig);
 
 if (!isCloudinaryConfigured()) {
-  console.warn("⚠️ Cloudinary is not configured. Image uploads will fail.");
-  console.warn("💡 Please set the following environment variables:");
+  console.warn("Cloudinary is not configured. Image uploads will fail.");
+  console.warn("Please set the following environment variables:");
   console.warn("   - CLOUDINARY_CLOUD_NAME");
   console.warn("   - CLOUDINARY_API_KEY");
   console.warn("   - CLOUDINARY_API_SECRET");
 } else {
-  console.log("✅ Cloudinary configured successfully");
+  console.log("Cloudinary configured successfully");
 }
 
 // Base folder path

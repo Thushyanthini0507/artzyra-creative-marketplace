@@ -14,7 +14,7 @@ const dropOldIndexes = async () => {
 
     console.log("📡 Connecting to MongoDB...");
     await connectDB();
-    console.log("✓ MongoDB connected successfully\n");
+    console.log("MongoDB connected successfully\n");
 
     const db = mongoose.connection.db;
     const usersCollection = db.collection("users");
@@ -29,10 +29,10 @@ const dropOldIndexes = async () => {
     // Drop old admin_id index if it exists
     try {
       await usersCollection.dropIndex("admin_id_1");
-      console.log("✓ Dropped old admin_id_1 index");
+      console.log("Dropped old admin_id_1 index");
     } catch (error) {
       if (error.code === 27) {
-        console.log("ℹ️  admin_id_1 index doesn't exist, skipping");
+        console.log("admin_id_1 index doesn't exist, skipping");
       } else {
         throw error;
       }
@@ -43,12 +43,12 @@ const dropOldIndexes = async () => {
     for (const indexName of oldIndexes) {
       try {
         await usersCollection.dropIndex(indexName);
-        console.log(`✓ Dropped old ${indexName} index`);
+        console.log(`Dropped old ${indexName} index`);
       } catch (error) {
         if (error.code === 27) {
-          console.log(`ℹ️  ${indexName} index doesn't exist, skipping`);
+          console.log(`${indexName} index doesn't exist, skipping`);
         } else {
-          console.warn(`⚠️  Could not drop ${indexName}:`, error.message);
+          console.warn(`Could not drop ${indexName}:`, error.message);
         }
       }
     }
@@ -67,41 +67,41 @@ const dropOldIndexes = async () => {
         const collection = db.collection(collectionName);
         const indexes = await collection.indexes();
         console.log(
-          `\n📋 ${collectionName} indexes:`,
+          `\n${collectionName} indexes:`,
           indexes.map((idx) => idx.name)
         );
 
         // Drop email index (email is now in Users collection)
         try {
           await collection.dropIndex("email_1");
-          console.log(`✓ Dropped email_1 index from ${collectionName}`);
+          console.log(`Dropped email_1 index from ${collectionName}`);
         } catch (error) {
           if (error.code === 27) {
             console.log(
-              `ℹ️  email_1 index doesn't exist in ${collectionName}, skipping`
+              `email_1 index doesn't exist in ${collectionName}, skipping`
             );
           } else {
             console.warn(
-              `⚠️  Could not drop email_1 from ${collectionName}:`,
+              `Could not drop email_1 from ${collectionName}:`,
               error.message
             );
           }
         }
       } catch (error) {
         console.warn(
-          `⚠️  Could not access ${collectionName} collection:`,
+          `Could not access ${collectionName} collection:`,
           error.message
         );
       }
     }
 
-    console.log("\n✅ Index cleanup completed successfully!");
+    console.log("\nIndex cleanup completed successfully!");
   } catch (error) {
-    console.error("❌ Error during index cleanup:", error);
+    console.error("Error during index cleanup:", error);
     process.exit(1);
   } finally {
     await mongoose.connection.close();
-    console.log("🔌 Database connection closed");
+    console.log("Database connection closed");
     process.exit(0);
   }
 };
